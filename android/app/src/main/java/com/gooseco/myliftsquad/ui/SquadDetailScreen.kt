@@ -85,6 +85,7 @@ fun SquadDetailScreen(
     var athleteOptions by remember { mutableStateOf<Athlete?>(null) }
     var athleteToDelete by remember { mutableStateOf<Athlete?>(null) }
     var selectedAthlete by remember { mutableStateOf<Athlete?>(null) }
+
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -382,7 +383,7 @@ private fun AthleteOptionsDialog(
 }
 
 @Composable
-private fun AthleteDetailSheet(
+internal fun AthleteDetailSheet(
     athlete: Athlete,
     history: List<CompetitionEntry>,
     historyLoading: Boolean,

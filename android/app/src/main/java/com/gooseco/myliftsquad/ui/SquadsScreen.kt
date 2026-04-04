@@ -27,9 +27,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Badge
@@ -40,6 +42,7 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -47,6 +50,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -63,8 +67,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.gooseco.myliftsquad.R
+import com.gooseco.myliftsquad.data.db.Athlete
 import com.gooseco.myliftsquad.data.db.AthleteWithSquad
 import com.gooseco.myliftsquad.data.db.SquadWithCount
+import com.gooseco.myliftsquad.ui.viewmodel.SquadDetailViewModel
 import com.gooseco.myliftsquad.ui.viewmodel.SquadsViewModel
 
 private fun formatKgHome(value: Double): String =
@@ -80,6 +86,13 @@ fun SquadsScreen(
     onNavigateToSettings: () -> Unit,
     viewModel: SquadsViewModel = viewModel()
 ) {
+    val detailViewModel: SquadDetailViewModel = viewModel()
+    val competitionHistory by detailViewModel.competitionHistory.collectAsState()
+    val historyLoading by detailViewModel.historyLoading.collectAsState()
+    val historyError by detailViewModel.historyError.collectAsState()
+    var selectedFavourite by remember { mutableStateOf<Athlete?>(null) }
+    val favouriteSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
+
     val squads by viewModel.squads.collectAsState()
     val favourites by viewModel.favourites.collectAsState()
     var showCreateDialog by remember { mutableStateOf(false) }
@@ -162,7 +175,10 @@ fun SquadsScreen(
                         items(favourites, key = { "fav_${it.athlete.id}" }) { athleteWithSquad ->
                             FavouriteAthleteCard(
                                 athleteWithSquad = athleteWithSquad,
-                                onClick = { onSquadClick(athleteWithSquad.athlete.squadId) }
+                                onClick = {
+                                    selectedFavourite = athleteWithSquad.athlete
+                                    detailViewModel.viewAthlete(athleteWithSquad.athlete)
+                                }
                             )
                         }
                         item {
@@ -207,7 +223,12 @@ fun SquadsScreen(
                 modifier = Modifier
                     .align(Alignment.BottomStart)
                     .navigationBarsPadding()
-                    .padding(start = 16.dp, bottom = 16.dp, end = 80.dp),
+                    .padding(start = 16.dp, bottom = 16.dp, end = 80.dp)
+                    .background(
+                        Color.White.copy(alpha = 0.8f),
+                        shape = RoundedCornerShape(8.dp)
+                    )
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
@@ -244,11 +265,31 @@ fun SquadsScreen(
                     horizontalAlignment = Alignment.End,
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    SpeedDialItem(label = "New Squad") {
+                    SpeedDialItem(
+                        label = "New Squad",
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Filled.Add,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(14.dp)
+                            )
+                        }
+                    ) {
                         fabExpanded = false
                         showCreateDialog = true
                     }
-                    SpeedDialItem(label = "Settings") {
+                    SpeedDialItem(
+                        label = "Settings",
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Filled.Settings,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(14.dp)
+                            )
+                        }
+                    ) {
                         fabExpanded = false
                         onNavigateToSettings()
                     }
@@ -313,6 +354,24 @@ fun SquadsScreen(
                 }
             }
         )
+    }
+
+    selectedFavourite?.let { athlete ->
+        ModalBottomSheet(
+            onDismissRequest = {
+                selectedFavourite = null
+                detailViewModel.clearViewingAthlete()
+            },
+            sheetState = favouriteSheetState
+        ) {
+            AthleteDetailSheet(
+                athlete = athlete,
+                history = competitionHistory,
+                historyLoading = historyLoading,
+                historyError = historyError,
+                onRefresh = { detailViewModel.refreshAthleteHistory(athlete.slug) }
+            )
+        }
     }
 }
 
@@ -384,11 +443,18 @@ private fun FavouriteAthleteCard(
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
-                    Text(
-                        text = athleteWithSquad.squadName,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    val prs = listOfNotNull(
+                        athlete.bestSquat?.let { "S ${formatKgHome(it)}" },
+                        athlete.bestBench?.let { "B ${formatKgHome(it)}" },
+                        athlete.bestDeadlift?.let { "D ${formatKgHome(it)}" }
+                    ).joinToString("  ")
+                    if (prs.isNotEmpty()) {
+                        Text(
+                            text = prs,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
             athlete.bestTotal?.let { total ->
