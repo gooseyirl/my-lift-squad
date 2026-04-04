@@ -154,6 +154,19 @@ class SquadDetailViewModel(app: Application) : AndroidViewModel(app) {
                     )
                 }
                 competitionEntryDao.insertAll(entries)
+                val latest = competitionEntryDao.getLatestEntry(slug)
+                if (latest != null) {
+                    val athleteId = athletes.value.find { it.slug == slug }?.id
+                        ?: athleteDao.getAthleteBySlug(slug)?.id
+                    if (athleteId != null) {
+                        athleteDao.updateLastCompDetails(
+                            athleteId = athleteId,
+                            federation = latest.federation,
+                            weightClass = latest.weightClassKg,
+                            equipment = latest.equipment
+                        )
+                    }
+                }
             }
         } catch (e: Exception) {
             _historyError.value = "Failed to load competition history."
@@ -209,6 +222,7 @@ class SquadDetailViewModel(app: Application) : AndroidViewModel(app) {
                     gender = oplAthlete.gender
                 )
             )
+            fetchHistory(oplAthlete.slug)
         }
     }
 }

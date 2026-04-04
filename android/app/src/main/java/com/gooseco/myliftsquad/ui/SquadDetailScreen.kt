@@ -50,8 +50,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.gooseco.myliftsquad.data.db.Athlete
@@ -280,11 +283,42 @@ private fun AthleteCard(
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
-                    if (!athlete.federation.isNullOrEmpty()) {
+                    val metaParts = listOfNotNull(
+                        athlete.federation,
+                        athlete.gender,
+                        athlete.weightClass,
+                        athlete.equipment
+                    )
+                    if (metaParts.isNotEmpty()) {
+                        val primary = MaterialTheme.colorScheme.primary
+                        val secondary = MaterialTheme.colorScheme.onSurfaceVariant
                         Text(
-                            text = athlete.federation,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.primary
+                            text = buildAnnotatedString {
+                                metaParts.forEachIndexed { index, part ->
+                                    if (index > 0) withStyle(SpanStyle(color = secondary)) { append(" - ") }
+                                    withStyle(SpanStyle(color = if (index == 0) primary else secondary)) { append(part) }
+                                }
+                            },
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                    val sbdParts = listOfNotNull(
+                        athlete.bestSquat?.let { Pair("S", formatKg(it)) },
+                        athlete.bestBench?.let { Pair("B", formatKg(it)) },
+                        athlete.bestDeadlift?.let { Pair("D", formatKg(it)) }
+                    )
+                    if (sbdParts.isNotEmpty()) {
+                        val primary = MaterialTheme.colorScheme.primary
+                        val secondary = MaterialTheme.colorScheme.onSurfaceVariant
+                        Text(
+                            text = buildAnnotatedString {
+                                sbdParts.forEachIndexed { index, (letter, value) ->
+                                    if (index > 0) withStyle(SpanStyle(color = secondary)) { append("  ") }
+                                    withStyle(SpanStyle(color = primary)) { append(letter) }
+                                    withStyle(SpanStyle(color = secondary)) { append(" $value") }
+                                }
+                            },
+                            style = MaterialTheme.typography.bodySmall
                         )
                     }
                 }
@@ -314,11 +348,6 @@ private fun AthleteCard(
                         }
                     }
                 }
-            }
-            Spacer(Modifier.height(6.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                athlete.weightClass?.let { wc -> InfoChip(label = wc) }
-                athlete.equipment?.let { eq -> InfoChip(label = eq) }
             }
         }
     }

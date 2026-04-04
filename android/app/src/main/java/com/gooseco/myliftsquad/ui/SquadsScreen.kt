@@ -62,7 +62,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -466,16 +469,23 @@ private fun FavouriteAthleteCard(
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
-                    val prs = listOfNotNull(
-                        athlete.bestSquat?.let { "S ${formatKgHome(it)}" },
-                        athlete.bestBench?.let { "B ${formatKgHome(it)}" },
-                        athlete.bestDeadlift?.let { "D ${formatKgHome(it)}" }
-                    ).joinToString("  ")
-                    if (prs.isNotEmpty()) {
+                    val sbdParts = listOfNotNull(
+                        athlete.bestSquat?.let { Pair("S", formatKgHome(it)) },
+                        athlete.bestBench?.let { Pair("B", formatKgHome(it)) },
+                        athlete.bestDeadlift?.let { Pair("D", formatKgHome(it)) }
+                    )
+                    if (sbdParts.isNotEmpty()) {
+                        val primary = MaterialTheme.colorScheme.primary
+                        val secondary = MaterialTheme.colorScheme.onSurfaceVariant
                         Text(
-                            text = prs,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            text = buildAnnotatedString {
+                                sbdParts.forEachIndexed { index, (letter, value) ->
+                                    if (index > 0) withStyle(SpanStyle(color = secondary)) { append("  ") }
+                                    withStyle(SpanStyle(color = primary)) { append(letter) }
+                                    withStyle(SpanStyle(color = secondary)) { append(" $value") }
+                                }
+                            },
+                            style = MaterialTheme.typography.bodySmall
                         )
                     }
                 }
@@ -529,12 +539,6 @@ private fun SquadCard(
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface
-                )
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    text = "Long press to delete",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             Row(

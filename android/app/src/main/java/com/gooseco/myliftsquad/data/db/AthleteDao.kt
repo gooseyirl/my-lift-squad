@@ -37,6 +37,9 @@ interface AthleteDao {
     @Delete
     suspend fun delete(athlete: Athlete)
 
+    @Query("SELECT * FROM athletes WHERE slug = :slug LIMIT 1")
+    suspend fun getAthleteBySlug(slug: String): Athlete?
+
     @Query("SELECT * FROM athletes")
     suspend fun getAllAthletes(): List<Athlete>
 
@@ -48,4 +51,11 @@ interface AthleteDao {
 
     @Query("UPDATE athletes SET squadId = :newSquadId WHERE squadId = :oldSquadId AND isFavourite = 1")
     suspend fun moveFavouritesToSquad(oldSquadId: Int, newSquadId: Int)
+
+    @Query("""
+        UPDATE athletes
+        SET federation = :federation, weightClass = :weightClass, equipment = :equipment
+        WHERE id = :athleteId
+    """)
+    suspend fun updateLastCompDetails(athleteId: Int, federation: String?, weightClass: String?, equipment: String?)
 }

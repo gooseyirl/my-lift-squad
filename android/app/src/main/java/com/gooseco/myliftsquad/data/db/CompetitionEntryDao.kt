@@ -23,4 +23,7 @@ interface CompetitionEntryDao {
 
     @Query("DELETE FROM competition_entries")
     suspend fun deleteAll()
+
+    @Query("SELECT * FROM competition_entries WHERE athleteSlug = :slug ORDER BY date DESC LIMIT 1")
+    suspend fun getLatestEntry(slug: String): CompetitionEntry?
 }
