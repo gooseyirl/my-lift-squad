@@ -58,4 +58,11 @@ interface AthleteDao {
         WHERE id = :athleteId
     """)
     suspend fun updateLastCompDetails(athleteId: Int, federation: String?, weightClass: String?, equipment: String?)
+
+    @Query("""
+        UPDATE athletes
+        SET bestSquat = :bestSquat, bestBench = :bestBench, bestDeadlift = :bestDeadlift
+        WHERE id = :athleteId
+    """)
+    suspend fun updatePRs(athleteId: Int, bestSquat: Double?, bestBench: Double?, bestDeadlift: Double?)
 }
