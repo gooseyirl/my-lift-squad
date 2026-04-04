@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.gooseco.myliftsquad.MyLiftSquadApp
+import com.gooseco.myliftsquad.data.db.Athlete
 import com.gooseco.myliftsquad.data.db.AthleteWithSquad
 import com.gooseco.myliftsquad.data.db.Squad
 import com.gooseco.myliftsquad.data.db.SquadWithCount
@@ -37,6 +38,12 @@ class SquadsViewModel(app: Application) : AndroidViewModel(app) {
         if (trimmed.isEmpty()) return
         viewModelScope.launch {
             squadDao.insert(Squad(name = trimmed))
+        }
+    }
+
+    fun unfavourite(athlete: Athlete) {
+        viewModelScope.launch {
+            athleteDao.setFavourite(athlete.id, false)
         }
     }
 

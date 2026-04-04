@@ -97,6 +97,7 @@ fun SquadsScreen(
     val favourites by viewModel.favourites.collectAsState()
     var showCreateDialog by remember { mutableStateOf(false) }
     var squadToDelete by remember { mutableStateOf<SquadWithCount?>(null) }
+    var athleteToUnfavourite by remember { mutableStateOf<Athlete?>(null) }
     var fabExpanded by remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -178,7 +179,8 @@ fun SquadsScreen(
                                 onClick = {
                                     selectedFavourite = athleteWithSquad.athlete
                                     detailViewModel.viewAthlete(athleteWithSquad.athlete)
-                                }
+                                },
+                                onLongPress = { athleteToUnfavourite = athleteWithSquad.athlete }
                             )
                         }
                         item {
@@ -356,6 +358,26 @@ fun SquadsScreen(
         )
     }
 
+    athleteToUnfavourite?.let { athlete ->
+        AlertDialog(
+            onDismissRequest = { athleteToUnfavourite = null },
+            title = { Text(athlete.name) },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.unfavourite(athlete)
+                    athleteToUnfavourite = null
+                }) {
+                    Text("Unfavourite", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { athleteToUnfavourite = null }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
     selectedFavourite?.let { athlete ->
         ModalBottomSheet(
             onDismissRequest = {
@@ -406,13 +428,14 @@ private fun SpeedDialItem(
 @Composable
 private fun FavouriteAthleteCard(
     athleteWithSquad: AthleteWithSquad,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onLongPress: () -> Unit
 ) {
     val athlete = athleteWithSquad.athlete
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .combinedClickable(onClick = onClick),
+            .combinedClickable(onClick = onClick, onLongClick = onLongPress),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant
