@@ -42,6 +42,10 @@ class SquadsViewModel(app: Application) : AndroidViewModel(app) {
 
     fun deleteSquad(squad: SquadWithCount) {
         viewModelScope.launch {
+            val systemSquad = squadDao.getSystemSquad()
+            if (systemSquad != null) {
+                athleteDao.moveFavouritesToSquad(squad.id, systemSquad.id)
+            }
             squadDao.delete(Squad(id = squad.id, name = squad.name))
         }
     }

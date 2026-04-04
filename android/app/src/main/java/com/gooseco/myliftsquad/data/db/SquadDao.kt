@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface SquadDao {
 
-    @Query("SELECT * FROM squads ORDER BY name ASC")
+    @Query("SELECT * FROM squads WHERE isSystem = 0 ORDER BY name ASC")
     fun getAllSquads(): Flow<List<Squad>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -22,6 +22,18 @@ interface SquadDao {
     @Query("SELECT * FROM squads WHERE id = :id LIMIT 1")
     suspend fun getSquadById(id: Int): Squad?
 
-    @Query("SELECT s.id, s.name, COUNT(a.id) as athleteCount FROM squads s LEFT JOIN athletes a ON a.squadId = s.id GROUP BY s.id ORDER BY s.name ASC")
+    @Query("SELECT s.id, s.name, COUNT(a.id) as athleteCount FROM squads s LEFT JOIN athletes a ON a.squadId = s.id WHERE s.isSystem = 0 GROUP BY s.id ORDER BY s.name ASC")
     fun getAllSquadsWithCount(): Flow<List<SquadWithCount>>
+
+    @Query("SELECT * FROM squads WHERE isSystem = 0 ORDER BY name ASC")
+    suspend fun getAllSquadsList(): List<Squad>
+
+    @Query("SELECT * FROM squads WHERE isSystem = 1 LIMIT 1")
+    suspend fun getSystemSquad(): Squad?
+
+    @Query("DELETE FROM squads")
+    suspend fun deleteAll()
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(squads: List<Squad>)
 }

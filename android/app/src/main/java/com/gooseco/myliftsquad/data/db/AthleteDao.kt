@@ -36,4 +36,16 @@ interface AthleteDao {
 
     @Delete
     suspend fun delete(athlete: Athlete)
+
+    @Query("SELECT * FROM athletes")
+    suspend fun getAllAthletes(): List<Athlete>
+
+    @Query("DELETE FROM athletes")
+    suspend fun deleteAll()
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(athletes: List<Athlete>)
+
+    @Query("UPDATE athletes SET squadId = :newSquadId WHERE squadId = :oldSquadId AND isFavourite = 1")
+    suspend fun moveFavouritesToSquad(oldSquadId: Int, newSquadId: Int)
 }

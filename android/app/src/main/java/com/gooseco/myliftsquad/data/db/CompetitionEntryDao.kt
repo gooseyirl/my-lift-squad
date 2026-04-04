@@ -20,4 +20,7 @@ interface CompetitionEntryDao {
 
     @Query("SELECT COUNT(*) FROM competition_entries WHERE athleteSlug = :slug")
     suspend fun countForAthlete(slug: String): Int
+
+    @Query("DELETE FROM competition_entries")
+    suspend fun deleteAll()
 }
