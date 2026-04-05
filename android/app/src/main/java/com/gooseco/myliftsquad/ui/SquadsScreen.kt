@@ -230,7 +230,7 @@ fun SquadsScreen(
                     .navigationBarsPadding()
                     .padding(start = 16.dp, bottom = 16.dp, end = 80.dp)
                     .background(
-                        Color.White.copy(alpha = 0.8f),
+                        MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
                         shape = RoundedCornerShape(8.dp)
                     )
                     .padding(horizontal = 8.dp, vertical = 4.dp),
