@@ -10,7 +10,7 @@ final class StoreKitManager {
     var isLoading: Bool = false
     var errorMessage: String?
 
-    private let productID = "support_developer"
+    private let productID = "com.gooseco.myliftsquad.support_developer"
 
     private init() {
         isDonated = UserDefaults.standard.bool(forKey: "donated")
