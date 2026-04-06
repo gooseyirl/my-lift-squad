@@ -368,7 +368,7 @@
 				PROVISIONING_PROFILE_SPECIFIER = "MyLiftSquad AppStore Distribution";
 				SDKROOT = iphoneos;
 				SWIFT_VERSION = 6.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};
@@ -387,7 +387,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.gooseco.myliftsquad;
 				SDKROOT = iphoneos;
 				SWIFT_VERSION = 6.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
