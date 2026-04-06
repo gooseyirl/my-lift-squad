@@ -1,0 +1,476 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		082EE242078FC9AD5989661B /* SquadDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11A349A5D90667E9323BEA48 /* SquadDetailViewModel.swift */; };
+		08B4B681822B85A17DEBE66A /* Athlete.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7FA511A4050ADABC799C838 /* Athlete.swift */; };
+		0AD14F0D7D636C26CB75FC01 /* SquadDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77132CA125AC38719E254C09 /* SquadDetailView.swift */; };
+		1944D1C6779864A99991D8FC /* AppTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90FD5FA4F30AE985F53E7421 /* AppTheme.swift */; };
+		1C134E2AFBD1504F5A8205BE /* SearchViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFA54A7F4AFE1E304AB6B17F /* SearchViewModel.swift */; };
+		33E2AEEC8DE2FC8198F532E4 /* Quotes.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEE016F439CB81B36B772F58 /* Quotes.swift */; };
+		388DA6015DD89FC3E9E5B808 /* CompetitionEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0149F8071235573CC0B9020C /* CompetitionEntry.swift */; };
+		453C796F05B45380F9A6C75E /* BackupModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5968D96416CBBA2C1D3553A9 /* BackupModels.swift */; };
+		4A1836A3B73B144DFED363CE /* OplModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF75DD4387FC39FC137DC9E9 /* OplModels.swift */; };
+		57B154ADD7CFD90C1372BF5F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C7451EA7632DEF5C348F4B73 /* Assets.xcassets */; };
+		9F6542F4DF89A7CFE91BA7A7 /* StoreKitManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 506E7633A5AF1BBF7DF6559E /* StoreKitManager.swift */; };
+		A1426F4FD2BF34BEFD0DF7D8 /* SettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 160D1CB055D2C58756287CFF /* SettingsViewModel.swift */; };
+		AB7B1F3C467ED786F8A3E78A /* Squad.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84024A53DF1AF223D15A837A /* Squad.swift */; };
+		C9EDCB4DAE277E8F73E70B57 /* SearchAthleteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32894700EF07689F737B5FA4 /* SearchAthleteView.swift */; };
+		CB6266A1DD9A3AFBC48E8E33 /* AthleteDetailSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8FB77174F6365B2841A6252 /* AthleteDetailSheet.swift */; };
+		E1BB25D3F517491DF4248839 /* SquadsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A2E97008362F1E399F1A11 /* SquadsViewModel.swift */; };
+		E478CA63C9C092B890EA22BC /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74E07FDBF48B0C9D3A6F277B /* ContentView.swift */; };
+		E79BB299EB7673235F7F0409 /* MyLiftSquadApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0313FADF9F5B04230C3183CD /* MyLiftSquadApp.swift */; };
+		EC117775BFB5DD92ED7DFA63 /* SBDText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34D292DCC3BB668525EEC467 /* SBDText.swift */; };
+		F55A117E5E9E3070565BBFA1 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62E37F3AA209CAC97785668E /* SettingsView.swift */; };
+		FB99AAF908CB4DF1D3588028 /* OplApiService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11059B45567F1694BAD1E61F /* OplApiService.swift */; };
+		FDE475508CAEEFE80454965F /* SquadsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFF5D2E15B157333C546ECFB /* SquadsView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		0149F8071235573CC0B9020C /* CompetitionEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompetitionEntry.swift; sourceTree = "<group>"; };
+		0313FADF9F5B04230C3183CD /* MyLiftSquadApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MyLiftSquadApp.swift; sourceTree = "<group>"; };
+		11059B45567F1694BAD1E61F /* OplApiService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OplApiService.swift; sourceTree = "<group>"; };
+		11A349A5D90667E9323BEA48 /* SquadDetailViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SquadDetailViewModel.swift; sourceTree = "<group>"; };
+		160D1CB055D2C58756287CFF /* SettingsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewModel.swift; sourceTree = "<group>"; };
+		32894700EF07689F737B5FA4 /* SearchAthleteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchAthleteView.swift; sourceTree = "<group>"; };
+		34D292DCC3BB668525EEC467 /* SBDText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SBDText.swift; sourceTree = "<group>"; };
+		42B68F5D442E40C614FAE4D5 /* MyLiftSquad.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = MyLiftSquad.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		506E7633A5AF1BBF7DF6559E /* StoreKitManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreKitManager.swift; sourceTree = "<group>"; };
+		5968D96416CBBA2C1D3553A9 /* BackupModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackupModels.swift; sourceTree = "<group>"; };
+		62E37F3AA209CAC97785668E /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		74E07FDBF48B0C9D3A6F277B /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		77132CA125AC38719E254C09 /* SquadDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SquadDetailView.swift; sourceTree = "<group>"; };
+		84024A53DF1AF223D15A837A /* Squad.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Squad.swift; sourceTree = "<group>"; };
+		8A984063A64B876E2A712E51 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		90FD5FA4F30AE985F53E7421 /* AppTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTheme.swift; sourceTree = "<group>"; };
+		A1A2E97008362F1E399F1A11 /* SquadsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SquadsViewModel.swift; sourceTree = "<group>"; };
+		A7FA511A4050ADABC799C838 /* Athlete.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Athlete.swift; sourceTree = "<group>"; };
+		AF75DD4387FC39FC137DC9E9 /* OplModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OplModels.swift; sourceTree = "<group>"; };
+		BEE016F439CB81B36B772F58 /* Quotes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Quotes.swift; sourceTree = "<group>"; };
+		BFA54A7F4AFE1E304AB6B17F /* SearchViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchViewModel.swift; sourceTree = "<group>"; };
+		C7451EA7632DEF5C348F4B73 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		E8FB77174F6365B2841A6252 /* AthleteDetailSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AthleteDetailSheet.swift; sourceTree = "<group>"; };
+		EFF5D2E15B157333C546ECFB /* SquadsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SquadsView.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		1BC047327C5F78E9E1EF7BC8 /* UI */ = {
+			isa = PBXGroup;
+			children = (
+				D87E71BD61A7045D41AD2C24 /* Components */,
+				3810EA4FEC034D8D05B082D0 /* Screens */,
+				FEBE8C8ECF9F8DFE19EA937E /* Theme */,
+				66E6AA9FC6F96531F8A21762 /* ViewModels */,
+			);
+			path = UI;
+			sourceTree = "<group>";
+		};
+		3810EA4FEC034D8D05B082D0 /* Screens */ = {
+			isa = PBXGroup;
+			children = (
+				E8FB77174F6365B2841A6252 /* AthleteDetailSheet.swift */,
+				32894700EF07689F737B5FA4 /* SearchAthleteView.swift */,
+				62E37F3AA209CAC97785668E /* SettingsView.swift */,
+				77132CA125AC38719E254C09 /* SquadDetailView.swift */,
+				EFF5D2E15B157333C546ECFB /* SquadsView.swift */,
+			);
+			path = Screens;
+			sourceTree = "<group>";
+		};
+		5AE1F276252CE6DBEBBECF20 /* Data */ = {
+			isa = PBXGroup;
+			children = (
+				5968D96416CBBA2C1D3553A9 /* BackupModels.swift */,
+				BEE016F439CB81B36B772F58 /* Quotes.swift */,
+				506E7633A5AF1BBF7DF6559E /* StoreKitManager.swift */,
+				9D2099D52960E151089E3B1A /* API */,
+				F4A592D573035A87C7DF4AC4 /* DB */,
+			);
+			path = Data;
+			sourceTree = "<group>";
+		};
+		66E6AA9FC6F96531F8A21762 /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				BFA54A7F4AFE1E304AB6B17F /* SearchViewModel.swift */,
+				160D1CB055D2C58756287CFF /* SettingsViewModel.swift */,
+				11A349A5D90667E9323BEA48 /* SquadDetailViewModel.swift */,
+				A1A2E97008362F1E399F1A11 /* SquadsViewModel.swift */,
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		7A6FD0327EB76ACA7D7A3313 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				C7451EA7632DEF5C348F4B73 /* Assets.xcassets */,
+				8A984063A64B876E2A712E51 /* Info.plist */,
+			);
+			name = Resources;
+			path = MyLiftSquad/Resources;
+			sourceTree = "<group>";
+		};
+		7DB16BA1CBA5EC18FA8FE332 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				9D5F70892AA21CBA54836BEA /* App */,
+				5AE1F276252CE6DBEBBECF20 /* Data */,
+				1BC047327C5F78E9E1EF7BC8 /* UI */,
+			);
+			name = Sources;
+			path = MyLiftSquad/Sources;
+			sourceTree = "<group>";
+		};
+		9D2099D52960E151089E3B1A /* API */ = {
+			isa = PBXGroup;
+			children = (
+				11059B45567F1694BAD1E61F /* OplApiService.swift */,
+				AF75DD4387FC39FC137DC9E9 /* OplModels.swift */,
+			);
+			path = API;
+			sourceTree = "<group>";
+		};
+		9D5F70892AA21CBA54836BEA /* App */ = {
+			isa = PBXGroup;
+			children = (
+				74E07FDBF48B0C9D3A6F277B /* ContentView.swift */,
+				0313FADF9F5B04230C3183CD /* MyLiftSquadApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		D87E71BD61A7045D41AD2C24 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				34D292DCC3BB668525EEC467 /* SBDText.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
+		D9EDF2499EC3C1F3515086C5 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				42B68F5D442E40C614FAE4D5 /* MyLiftSquad.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		F4A592D573035A87C7DF4AC4 /* DB */ = {
+			isa = PBXGroup;
+			children = (
+				A7FA511A4050ADABC799C838 /* Athlete.swift */,
+				0149F8071235573CC0B9020C /* CompetitionEntry.swift */,
+				84024A53DF1AF223D15A837A /* Squad.swift */,
+			);
+			path = DB;
+			sourceTree = "<group>";
+		};
+		F726DC5A6C66986610B14E25 = {
+			isa = PBXGroup;
+			children = (
+				7A6FD0327EB76ACA7D7A3313 /* Resources */,
+				7DB16BA1CBA5EC18FA8FE332 /* Sources */,
+				D9EDF2499EC3C1F3515086C5 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		FEBE8C8ECF9F8DFE19EA937E /* Theme */ = {
+			isa = PBXGroup;
+			children = (
+				90FD5FA4F30AE985F53E7421 /* AppTheme.swift */,
+			);
+			path = Theme;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		D07118625497CFF88F30A77B /* MyLiftSquad */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D659D23E5351C124243C33BA /* Build configuration list for PBXNativeTarget "MyLiftSquad" */;
+			buildPhases = (
+				7185B454760FFB4F21B33CED /* Sources */,
+				07D39DDF472CCF6D2A0B13A9 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = MyLiftSquad;
+			packageProductDependencies = (
+			);
+			productName = MyLiftSquad;
+			productReference = 42B68F5D442E40C614FAE4D5 /* MyLiftSquad.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		72B52FCE698034AAB4071050 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					D07118625497CFF88F30A77B = {
+						DevelopmentTeam = "";
+					};
+				};
+			};
+			buildConfigurationList = 892C107E51F35CB6CF63D8A8 /* Build configuration list for PBXProject "MyLiftSquad" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = F726DC5A6C66986610B14E25;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = D9EDF2499EC3C1F3515086C5 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				D07118625497CFF88F30A77B /* MyLiftSquad */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		07D39DDF472CCF6D2A0B13A9 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				57B154ADD7CFD90C1372BF5F /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		7185B454760FFB4F21B33CED /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1944D1C6779864A99991D8FC /* AppTheme.swift in Sources */,
+				08B4B681822B85A17DEBE66A /* Athlete.swift in Sources */,
+				CB6266A1DD9A3AFBC48E8E33 /* AthleteDetailSheet.swift in Sources */,
+				453C796F05B45380F9A6C75E /* BackupModels.swift in Sources */,
+				388DA6015DD89FC3E9E5B808 /* CompetitionEntry.swift in Sources */,
+				E478CA63C9C092B890EA22BC /* ContentView.swift in Sources */,
+				E79BB299EB7673235F7F0409 /* MyLiftSquadApp.swift in Sources */,
+				FB99AAF908CB4DF1D3588028 /* OplApiService.swift in Sources */,
+				4A1836A3B73B144DFED363CE /* OplModels.swift in Sources */,
+				33E2AEEC8DE2FC8198F532E4 /* Quotes.swift in Sources */,
+				EC117775BFB5DD92ED7DFA63 /* SBDText.swift in Sources */,
+				C9EDCB4DAE277E8F73E70B57 /* SearchAthleteView.swift in Sources */,
+				1C134E2AFBD1504F5A8205BE /* SearchViewModel.swift in Sources */,
+				F55A117E5E9E3070565BBFA1 /* SettingsView.swift in Sources */,
+				A1426F4FD2BF34BEFD0DF7D8 /* SettingsViewModel.swift in Sources */,
+				AB7B1F3C467ED786F8A3E78A /* Squad.swift in Sources */,
+				0AD14F0D7D636C26CB75FC01 /* SquadDetailView.swift in Sources */,
+				082EE242078FC9AD5989661B /* SquadDetailViewModel.swift in Sources */,
+				FDE475508CAEEFE80454965F /* SquadsView.swift in Sources */,
+				E1BB25D3F517491DF4248839 /* SquadsViewModel.swift in Sources */,
+				9F6542F4DF89A7CFE91BA7A7 /* StoreKitManager.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		5D25213334CEA95B4DAB9E54 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				INFOPLIST_FILE = MyLiftSquad/Resources/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.gooseco.myliftsquad;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		99D22ED34D994CBEF9E37679 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_FILE = MyLiftSquad/Resources/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.gooseco.myliftsquad;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		A7B2CB7C3912DD6BD68CADF5 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_FILE = MyLiftSquad/Resources/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.gooseco.myliftsquad;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		E65799E12C9EF928D2FF027A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = "";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				INFOPLIST_FILE = MyLiftSquad/Resources/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.gooseco.myliftsquad;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		892C107E51F35CB6CF63D8A8 /* Build configuration list for PBXProject "MyLiftSquad" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5D25213334CEA95B4DAB9E54 /* Debug */,
+				E65799E12C9EF928D2FF027A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		D659D23E5351C124243C33BA /* Build configuration list for PBXNativeTarget "MyLiftSquad" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A7B2CB7C3912DD6BD68CADF5 /* Debug */,
+				99D22ED34D994CBEF9E37679 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 72B52FCE698034AAB4071050 /* Project object */;
+}
