@@ -61,25 +61,29 @@ struct SquadDetailView: View {
                 } else {
                     List {
                         ForEach(vm.athletes) { athlete in
-                            AthleteRowView(athlete: athlete)
-                                .onTapGesture {
-                                    vm.showDetail(for: athlete)
+                            Button {
+                                vm.showDetail(for: athlete)
+                            } label: {
+                                AthleteRowView(athlete: athlete)
+                                    .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                            .listRowBackground(Color(.systemBackground))
+                            .contextMenu {
+                                Button {
+                                    vm.toggleFavourite(athlete)
+                                } label: {
+                                    Label(
+                                        athlete.isFavourite ? "Remove Favourite" : "Add to Favourites",
+                                        systemImage: athlete.isFavourite ? "star.slash" : "star"
+                                    )
                                 }
-                                .contextMenu {
-                                    Button {
-                                        vm.toggleFavourite(athlete)
-                                    } label: {
-                                        Label(
-                                            athlete.isFavourite ? "Remove Favourite" : "Add to Favourites",
-                                            systemImage: athlete.isFavourite ? "star.slash" : "star"
-                                        )
-                                    }
-                                    Button(role: .destructive) {
-                                        vm.removeAthlete(athlete)
-                                    } label: {
-                                        Label("Remove", systemImage: "trash")
-                                    }
+                                Button(role: .destructive) {
+                                    vm.removeAthlete(athlete)
+                                } label: {
+                                    Label("Remove", systemImage: "trash")
                                 }
+                            }
                         }
                     }
                     .listStyle(.plain)

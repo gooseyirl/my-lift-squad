@@ -32,9 +32,7 @@ final class SquadDetailViewModel {
     func showDetail(for athlete: Athlete) {
         selectedAthlete = athlete
         showAthleteDetail = true
-        // Show cached data immediately, then refresh in background
         loadCachedHistory(for: athlete)
-        Task { await fetchFreshHistory(for: athlete) }
     }
 
     func refreshSelectedAthlete() {

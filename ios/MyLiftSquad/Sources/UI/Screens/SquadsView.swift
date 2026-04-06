@@ -21,7 +21,7 @@ struct SquadsView: View {
                 }
             }
             .navigationTitle("My Lift Squad")
-            .navigationBarTitleDisplayMode(.large)
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Image("app_icon")
@@ -125,21 +125,31 @@ struct SquadsView: View {
                         }
                     }
 
-                    // Quote
-                    if vm.showQuote && !vm.currentQuote.isEmpty {
+                }
+            }
+
+            // Quote — fixed at bottom-left, content scrolls behind it
+            if vm.showQuote && !vm.currentQuote.isEmpty {
+                VStack {
+                    Spacer()
+                    HStack(alignment: .center, spacing: 6) {
+                        Image(systemName: "star.fill")
+                            .font(.caption)
+                            .foregroundColor(.accentColor)
                         Text("\u{201C}\(vm.currentQuote)\u{201D}")
                             .font(.caption)
                             .italic()
                             .foregroundColor(.secondary)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(Color(.systemBackground).opacity(0.9))
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
-                            .padding(.horizontal, 16)
-                            .padding(.bottom, 88)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .onTapGesture { vm.nextQuote() }
                     }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color(.systemBackground).opacity(0.9))
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .padding(.leading, 16)
+                    .padding(.bottom, 16)
+                    .padding(.trailing, 80) // avoid FAB
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .onTapGesture { vm.nextQuote() }
                 }
             }
 
@@ -192,7 +202,7 @@ struct SquadsView: View {
                     athlete: athlete,
                     history: vm.favouriteHistory,
                     isLoading: vm.isFavouriteHistoryLoading,
-                    onRefresh: { vm.showDetail(for: athlete) }
+                    onRefresh: { vm.refreshFavouriteAthlete() }
                 )
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)

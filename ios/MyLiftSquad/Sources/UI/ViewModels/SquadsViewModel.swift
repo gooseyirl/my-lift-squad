@@ -70,16 +70,38 @@ final class SquadsViewModel {
 
     func showDetail(for athlete: Athlete) {
         selectedFavourite = athlete
-        favouriteHistory = []
         showFavouriteDetail = true
-        Task { await loadFavouriteHistory(for: athlete) }
+        loadCachedFavouriteHistory(for: athlete)
     }
 
-    private func loadFavouriteHistory(for athlete: Athlete) async {
-        isFavouriteHistoryLoading = true
-        defer { isFavouriteHistoryLoading = false }
-        guard let (results, _) = try? await OplApiService.shared.fetchHistory(slug: athlete.slug) else { return }
-        favouriteHistory = results
+    func refreshFavouriteAthlete() {
+        guard let athlete = selectedFavourite else { return }
+        Task {
+            isFavouriteHistoryLoading = true
+            defer { isFavouriteHistoryLoading = false }
+            guard let (results, _) = try? await OplApiService.shared.fetchHistory(slug: athlete.slug),
+                  !results.isEmpty else { return }
+            favouriteHistory = results
+        }
+    }
+
+    private func loadCachedFavouriteHistory(for athlete: Athlete) {
+        let slug = athlete.slug
+        let descriptor = FetchDescriptor<CompetitionEntry>(
+            predicate: #Predicate { $0.athleteSlug == slug },
+            sortBy: [SortDescriptor(\.date, order: .reverse)]
+        )
+        let cached = (try? modelContext.fetch(descriptor)) ?? []
+        favouriteHistory = cached.map {
+            CompetitionResult(
+                date: $0.date, meetName: $0.meetName, federation: $0.federation,
+                equipment: $0.equipment, division: $0.division, weightClassKg: $0.weightClassKg,
+                bodyweightKg: $0.bodyweightKg, best3SquatKg: $0.best3SquatKg,
+                best3BenchKg: $0.best3BenchKg, best3DeadliftKg: $0.best3DeadliftKg,
+                totalKg: $0.totalKg, place: $0.place, dots: $0.dots,
+                meetCountry: $0.meetCountry, meetTown: $0.meetTown
+            )
+        }
     }
 
     // MARK: - Quotes

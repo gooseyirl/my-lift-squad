@@ -6,6 +6,7 @@ struct MyLiftSquadApp: App {
     let modelContainer: ModelContainer
 
     init() {
+
         do {
             modelContainer = try ModelContainer(
                 for: Squad.self, Athlete.self, CompetitionEntry.self

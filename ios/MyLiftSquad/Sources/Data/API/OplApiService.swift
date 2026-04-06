@@ -103,41 +103,50 @@ actor OplApiService {
     }
 
     // MARK: - CSV Parsing
+    //
+    // Column indices (0-based), matching Android OplApiService:
+    //  0=Name  1=Sex  2=Event  3=Equipment  4=Age  5=AgeClass  6=BirthYearClass
+    //  7=Division  8=BodyweightKg  9=WeightClassKg
+    //  10=Squat1  11=Squat2  12=Squat3  13=Squat4  14=Best3SquatKg
+    //  15=Bench1  16=Bench2  17=Bench3  18=Bench4  19=Best3BenchKg
+    //  20=DL1     21=DL2     22=DL3     23=DL4     24=Best3DeadliftKg
+    //  25=TotalKg  26=Place  27=Dots  28=Wilks  29=Glossbrenner  30=Goodlift
+    //  31=Tested  32=Country  33=State  34=Federation  35=ParentFederation
+    //  36=Date  37=MeetCountry  38=MeetState  39=MeetTown  40=MeetName  41=Sanctioned
 
     private func parseCSV(_ csv: String, slug: String) -> [CompetitionResult] {
-        var lines = csv.components(separatedBy: "\n")
-        guard !lines.isEmpty else { return [] }
+        let lines = csv.components(separatedBy: "\n")
+        guard lines.count >= 2 else { return [] }
 
-        lines.removeFirst() // header
         let invalidPlaces: Set<String> = ["DQ", "DD", "DNS", "NS", "G"]
 
-        return lines.compactMap { line in
-            let fields = parseCSVLine(line)
-            guard fields.count >= 34 else { return nil }
+        return lines.dropFirst().compactMap { line in
+            guard !line.trimmingCharacters(in: .whitespaces).isEmpty else { return nil }
+            let f = parseCSVLine(line)
 
-            let place = fields[17]
-            guard !invalidPlaces.contains(place) else { return nil }
-
-            let date = fields[28]
-            let meetName = fields[33]
+            let date = f.count > 36 ? f[36] : ""
+            let meetName = f.count > 40 ? f[40] : ""
             guard !date.isEmpty, !meetName.isEmpty else { return nil }
+
+            let place = f.count > 26 ? f[26] : ""
+            guard !invalidPlaces.contains(place) else { return nil }
 
             return CompetitionResult(
                 date: date,
                 meetName: meetName,
-                federation: fields[26],
-                equipment: fields[3],
-                division: fields[7],
-                weightClassKg: fields[9],
-                bodyweightKg: Double(fields[8]) ?? 0,
-                best3SquatKg: Double(fields[12]) ?? 0,
-                best3BenchKg: Double(fields[16]) ?? 0,
-                best3DeadliftKg: Double(fields[20]) ?? 0,
-                totalKg: Double(fields[21]) ?? 0,
+                federation: f.count > 34 ? f[34] : "",
+                equipment: f.count > 3  ? f[3]  : "",
+                division:  f.count > 7  ? f[7]  : "",
+                weightClassKg: f.count > 9  ? f[9]  : "",
+                bodyweightKg:  f.count > 8  ? Double(f[8])  ?? 0 : 0,
+                best3SquatKg:  f.count > 14 ? Double(f[14]) ?? 0 : 0,
+                best3BenchKg:  f.count > 19 ? Double(f[19]) ?? 0 : 0,
+                best3DeadliftKg: f.count > 24 ? Double(f[24]) ?? 0 : 0,
+                totalKg:       f.count > 25 ? Double(f[25]) ?? 0 : 0,
                 place: place,
-                dots: Double(fields[23]) ?? 0,
-                meetCountry: fields[29],
-                meetTown: fields[31]
+                dots:          f.count > 27 ? Double(f[27]) ?? 0 : 0,
+                meetCountry:   f.count > 37 ? f[37] : "",
+                meetTown:      f.count > 39 ? f[39] : ""
             )
         }.sorted { $0.date > $1.date }
     }
