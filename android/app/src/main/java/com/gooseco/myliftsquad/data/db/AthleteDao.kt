@@ -40,6 +40,9 @@ interface AthleteDao {
     @Query("SELECT * FROM athletes WHERE slug = :slug LIMIT 1")
     suspend fun getAthleteBySlug(slug: String): Athlete?
 
+    @Query("SELECT slug FROM athletes")
+    fun getAllSlugs(): Flow<List<String>>
+
     @Query("SELECT * FROM athletes")
     suspend fun getAllAthletes(): List<Athlete>
 

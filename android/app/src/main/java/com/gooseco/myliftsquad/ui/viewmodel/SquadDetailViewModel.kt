@@ -11,6 +11,7 @@ import com.gooseco.myliftsquad.data.db.CompetitionEntry
 import com.gooseco.myliftsquad.data.db.Squad
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flatMapLatest
@@ -81,6 +82,14 @@ class SquadDetailViewModel(app: Application) : AndroidViewModel(app) {
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
             initialValue = 0
+        )
+
+    val existingSlugs: StateFlow<Set<String>> = athleteDao.getAllSlugs()
+        .map { it.toSet() }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = emptySet()
         )
 
     fun init(id: Int) {
@@ -230,6 +239,7 @@ class SquadDetailViewModel(app: Application) : AndroidViewModel(app) {
         val squadId = squadIdFlow.value
         if (squadId < 0) return
         viewModelScope.launch {
+            if (athleteDao.getAthleteBySlug(oplAthlete.slug) != null) return@launch
             athleteDao.insert(
                 Athlete(
                     squadId = squadId,

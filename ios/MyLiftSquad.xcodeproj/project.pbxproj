@@ -39,7 +39,7 @@
 		160D1CB055D2C58756287CFF /* SettingsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewModel.swift; sourceTree = "<group>"; };
 		32894700EF07689F737B5FA4 /* SearchAthleteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchAthleteView.swift; sourceTree = "<group>"; };
 		34D292DCC3BB668525EEC467 /* SBDText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SBDText.swift; sourceTree = "<group>"; };
-		42B68F5D442E40C614FAE4D5 /* MyLiftSquad.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = MyLiftSquad.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		42B68F5D442E40C614FAE4D5 /* MyLiftSquad.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MyLiftSquad.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		506E7633A5AF1BBF7DF6559E /* StoreKitManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreKitManager.swift; sourceTree = "<group>"; };
 		5968D96416CBBA2C1D3553A9 /* BackupModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackupModels.swift; sourceTree = "<group>"; };
 		62E37F3AA209CAC97785668E /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
@@ -364,6 +364,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				MARKETING_VERSION = 1.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.gooseco.myliftsquad;
 				PROVISIONING_PROFILE_SPECIFIER = "MyLiftSquad AppStore Distribution";
 				SDKROOT = iphoneos;
@@ -384,6 +385,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				MARKETING_VERSION = 1.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.gooseco.myliftsquad;
 				SDKROOT = iphoneos;
 				SWIFT_VERSION = 6.0;

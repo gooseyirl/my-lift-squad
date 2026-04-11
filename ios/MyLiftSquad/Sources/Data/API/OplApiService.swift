@@ -31,61 +31,52 @@ actor OplApiService {
     }
 
     private func searchGender(_ gender: String, query: String) async throws -> [OplAthlete] {
-        // Step 1: get start index
-        let searchURL = "\(baseURL)/search/rankings/\(gender)?q=\(query)&start=0&lang=en&units=kg"
-        guard let url = URL(string: searchURL) else { return [] }
-
-        let (searchData, _) = try await URLSession.shared.data(from: url)
-        guard let json = try? JSONSerialization.jsonObject(with: searchData) as? [String: Any],
-              let nextIndex = json["next_index"] as? Int else {
-            return []
-        }
-
-        // Step 2: get rankings at that index
-        let endIndex = nextIndex + 24
-        let rankURL = "\(baseURL)/rankings/\(gender)?start=\(nextIndex)&end=\(endIndex)&lang=en&units=kg"
-        guard let rUrl = URL(string: rankURL) else { return [] }
-
-        let (rankData, _) = try await URLSession.shared.data(from: rUrl)
-        guard let rankJson = try? JSONSerialization.jsonObject(with: rankData) as? [String: Any],
-              let rows = rankJson["rows"] as? [[Any]] else {
-            return []
-        }
-
         let queryLower = query.removingPercentEncoding?.lowercased() ?? query.lowercased()
-        return rows.compactMap { row in
-            guard row.count >= 24,
-                  let name = row[2] as? String,
-                  let slug = row[3] as? String else { return nil }
+        var accumulated: [String: OplAthlete] = [:]
+        var start = 0
 
-            guard name.lowercased().contains(queryLower) else { return nil }
+        for _ in 0..<3 {
+            let searchURL = "\(baseURL)/search/rankings/\(gender)?q=\(query)&start=\(start)&lang=en&units=kg"
+            guard let url = URL(string: searchURL) else { break }
 
-            let country = row[6] as? String ?? ""
-            let federation = row[8] as? String ?? ""
-            let lastDate = row[9] as? String ?? ""
-            let equipment = row[14] as? String ?? ""
-            let weightClass = row[18] as? String ?? ""
-            let squat = parseDouble(row[19])
-            let bench = parseDouble(row[20])
-            let deadlift = parseDouble(row[21])
-            let total = parseDouble(row[22])
-            let genderStr = gender == "men" ? "M" : "F"
+            let (searchData, _) = try await URLSession.shared.data(from: url)
+            guard let json = try? JSONSerialization.jsonObject(with: searchData) as? [String: Any],
+                  let nextIndex = json["next_index"] as? Int else { break }
 
-            return OplAthlete(
-                name: name,
-                slug: slug,
-                country: country,
-                federation: federation,
-                bestSquatKg: squat,
-                bestBenchKg: bench,
-                bestDeadliftKg: deadlift,
-                bestTotalKg: total,
-                weightClass: weightClass,
-                equipment: equipment,
-                lastCompDate: lastDate,
-                gender: genderStr
-            )
+            let rankURL = "\(baseURL)/rankings/\(gender)?start=\(nextIndex)&end=\(nextIndex + 24)&lang=en&units=kg"
+            guard let rUrl = URL(string: rankURL) else { break }
+
+            let (rankData, _) = try await URLSession.shared.data(from: rUrl)
+            guard let rankJson = try? JSONSerialization.jsonObject(with: rankData) as? [String: Any],
+                  let rows = rankJson["rows"] as? [[Any]] else { break }
+
+            for row in rows {
+                guard row.count >= 24,
+                      let name = row[2] as? String,
+                      let slug = row[3] as? String,
+                      name.lowercased().contains(queryLower),
+                      accumulated[slug] == nil else { continue }
+
+                accumulated[slug] = OplAthlete(
+                    name: name,
+                    slug: slug,
+                    country: row[6] as? String ?? "",
+                    federation: row[8] as? String ?? "",
+                    bestSquatKg: parseDouble(row[19]),
+                    bestBenchKg: parseDouble(row[20]),
+                    bestDeadliftKg: parseDouble(row[21]),
+                    bestTotalKg: parseDouble(row[22]),
+                    weightClass: row[18] as? String ?? "",
+                    equipment: row[14] as? String ?? "",
+                    lastCompDate: row[9] as? String ?? "",
+                    gender: gender == "men" ? "M" : "F"
+                )
+            }
+
+            start = nextIndex + 1
         }
+
+        return Array(accumulated.values)
     }
 
     // MARK: - Competition History

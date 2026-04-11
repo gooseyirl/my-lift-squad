@@ -61,6 +61,7 @@ fun SearchAthleteScreen(
     val results by searchViewModel.searchResults.collectAsState()
     val isLoading by searchViewModel.isLoading.collectAsState()
     val error by searchViewModel.error.collectAsState()
+    val existingSlugs by squadDetailViewModel.existingSlugs.collectAsState()
 
     val focusRequester = remember { FocusRequester() }
 
@@ -180,11 +181,15 @@ fun SearchAthleteScreen(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         items(results, key = { it.slug }) { athlete ->
+                            val alreadyAdded = athlete.slug in existingSlugs
                             SearchResultCard(
                                 athlete = athlete,
+                                alreadyAdded = alreadyAdded,
                                 onClick = {
-                                    squadDetailViewModel.addAthlete(athlete)
-                                    onBack()
+                                    if (!alreadyAdded) {
+                                        squadDetailViewModel.addAthlete(athlete)
+                                        onBack()
+                                    }
                                 }
                             )
                         }
@@ -209,8 +214,10 @@ fun SearchAthleteScreen(
 @Composable
 private fun SearchResultCard(
     athlete: OplAthlete,
+    alreadyAdded: Boolean,
     onClick: () -> Unit
 ) {
+    val contentAlpha = if (alreadyAdded) 0.4f else 1f
     Card(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
@@ -234,19 +241,26 @@ private fun SearchResultCard(
                         text = athlete.name,
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = contentAlpha)
                     )
                     if (!athlete.federation.isNullOrEmpty()) {
                         Text(
                             text = athlete.federation,
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.primary
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = contentAlpha)
                         )
                     }
                     if (!athlete.country.isNullOrEmpty()) {
                         Text(
                             text = athlete.country,
                             style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = contentAlpha)
+                        )
+                    }
+                    if (alreadyAdded) {
+                        Text(
+                            text = "Already added",
+                            style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
@@ -257,12 +271,12 @@ private fun SearchResultCard(
                             text = "${total.toInt()} kg",
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = contentAlpha)
                         )
                         Text(
                             text = "total",
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = contentAlpha)
                         )
                     }
                 }
