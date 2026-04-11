@@ -17,6 +17,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -28,6 +31,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -36,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.gooseco.myliftsquad.ui.viewmodel.BackupStatus
 import com.gooseco.myliftsquad.ui.viewmodel.SettingsViewModel
+import com.gooseco.myliftsquad.ui.viewmodel.ThemePreference
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,6 +50,7 @@ fun SettingsScreen(
 ) {
     val exportStatus by viewModel.exportStatus.collectAsState()
     val restoreStatus by viewModel.restoreStatus.collectAsState()
+    val theme by viewModel.theme.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     var showRestoreConfirm by remember { mutableStateOf(false) }
     var pendingRestoreUri by remember { mutableStateOf<android.net.Uri?>(null) }
@@ -117,6 +123,30 @@ fun SettingsScreen(
                 .padding(innerPadding)
         ) {
             Spacer(Modifier.height(8.dp))
+
+            SettingsSectionHeader("Appearance")
+
+            val themeOptions = listOf(
+                ThemePreference.SYSTEM to "System",
+                ThemePreference.LIGHT to "Light",
+                ThemePreference.DARK to "Dark"
+            )
+            SingleChoiceSegmentedButtonRow(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp)
+            ) {
+                themeOptions.forEachIndexed { index, (value, label) ->
+                    SegmentedButton(
+                        selected = theme == value,
+                        onClick = { viewModel.setTheme(value) },
+                        shape = SegmentedButtonDefaults.itemShape(index = index, count = themeOptions.size),
+                        label = { Text(label) }
+                    )
+                }
+            }
+
+            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
 
             SettingsSectionHeader("Backup & Restore")
 

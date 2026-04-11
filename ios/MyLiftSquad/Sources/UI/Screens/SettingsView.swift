@@ -6,6 +6,7 @@ struct SettingsView: View {
     let modelContext: ModelContext
     @State private var viewModel: SettingsViewModel?
     @State private var showFilePicker = false
+    @AppStorage("theme_preference") private var themePreference: String = "system"
 
     var body: some View {
         Group {
@@ -27,6 +28,15 @@ struct SettingsView: View {
     @ViewBuilder
     private func settingsContent(vm: SettingsViewModel) -> some View {
         List {
+            Section("Appearance") {
+                Picker("Theme", selection: $themePreference) {
+                    Text("System").tag("system")
+                    Text("Light").tag("light")
+                    Text("Dark").tag("dark")
+                }
+                .pickerStyle(.segmented)
+            }
+
             Section("Data") {
                 Button {
                     vm.exportBackup()

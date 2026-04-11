@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -25,6 +26,7 @@ import com.gooseco.myliftsquad.ui.SquadDetailScreen
 import com.gooseco.myliftsquad.ui.SquadsScreen
 import com.gooseco.myliftsquad.ui.theme.MyLiftSquadTheme
 import com.gooseco.myliftsquad.ui.viewmodel.SquadDetailViewModel
+import com.gooseco.myliftsquad.ui.viewmodel.ThemePreference
 
 class MainActivity : ComponentActivity() {
 
@@ -37,6 +39,7 @@ class MainActivity : ComponentActivity() {
 
         val prefs = getSharedPreferences("myliftsquad_prefs", Context.MODE_PRIVATE)
         val quote = getNextQuote(prefs)
+        ThemePreference.load(this)
 
         isDonatedState.value = BillingManager.isDonated(this)
         billingManager = BillingManager(this) {
@@ -45,8 +48,9 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val isDonated by isDonatedState
+            val theme by ThemePreference.flow.collectAsState()
 
-            MyLiftSquadTheme {
+            MyLiftSquadTheme(themePreference = theme) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background

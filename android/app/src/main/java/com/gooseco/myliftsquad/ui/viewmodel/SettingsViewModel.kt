@@ -1,6 +1,7 @@
 package com.gooseco.myliftsquad.ui.viewmodel
 
 import android.app.Application
+import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -21,7 +22,33 @@ data class BackupData(
 
 enum class BackupStatus { Idle, Success, Error }
 
+object ThemePreference {
+    const val SYSTEM = "system"
+    const val LIGHT = "light"
+    const val DARK = "dark"
+    private const val KEY = "theme_preference"
+    private const val PREFS = "myliftsquad_prefs"
+
+    private val _flow = MutableStateFlow(SYSTEM)
+    val flow: StateFlow<String> = _flow
+
+    fun load(context: Context) {
+        _flow.value = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .getString(KEY, SYSTEM) ?: SYSTEM
+    }
+
+    fun save(context: Context, value: String) {
+        _flow.value = value
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .edit().putString(KEY, value).apply()
+    }
+}
+
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
+
+    val theme: StateFlow<String> = ThemePreference.flow
+
+    fun setTheme(value: String) = ThemePreference.save(getApplication(), value)
 
     private val db = (application as MyLiftSquadApp).database
     private val gson = Gson()
