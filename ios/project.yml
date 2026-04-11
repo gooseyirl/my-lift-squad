@@ -42,6 +42,8 @@ targets:
       path: MyLiftSquad/Resources/Info.plist
       properties:
         CFBundleDisplayName: My Lift Squad
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         CFBundleIconName: AppIcon
         UILaunchScreen:
           UIColorName: ""
