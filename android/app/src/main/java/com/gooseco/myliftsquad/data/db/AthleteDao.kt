@@ -43,6 +43,12 @@ interface AthleteDao {
     @Query("SELECT slug FROM athletes")
     fun getAllSlugs(): Flow<List<String>>
 
+    @Query("SELECT slug FROM athletes WHERE squadId = :squadId")
+    fun getSlugsBySquad(squadId: Int): Flow<List<String>>
+
+    @Query("SELECT * FROM athletes WHERE slug = :slug AND squadId = :squadId LIMIT 1")
+    suspend fun getAthleteBySlugAndSquad(slug: String, squadId: Int): Athlete?
+
     @Query("SELECT * FROM athletes")
     suspend fun getAllAthletes(): List<Athlete>
 
@@ -64,8 +70,8 @@ interface AthleteDao {
 
     @Query("""
         UPDATE athletes
-        SET bestSquat = :bestSquat, bestBench = :bestBench, bestDeadlift = :bestDeadlift
+        SET bestSquat = :bestSquat, bestBench = :bestBench, bestDeadlift = :bestDeadlift, bestTotal = :bestTotal
         WHERE id = :athleteId
     """)
-    suspend fun updatePRs(athleteId: Int, bestSquat: Double?, bestBench: Double?, bestDeadlift: Double?)
+    suspend fun updatePRs(athleteId: Int, bestSquat: Double?, bestBench: Double?, bestDeadlift: Double?, bestTotal: Double?)
 }

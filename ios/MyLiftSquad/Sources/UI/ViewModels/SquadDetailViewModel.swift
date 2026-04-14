@@ -115,16 +115,11 @@ final class SquadDetailViewModel {
 
             // Recalculate PRs from all entries including single-discipline competitions.
             // OPL stores bomb-outs as negative values — exclude those and disqualified results.
-            let invalidPlaces: Set<String> = ["DQ", "DD", "DNS", "NS", "G"]
-            let valid = fresh.filter { !invalidPlaces.contains($0.place) }
-            let bestSquat = valid.map(\.best3SquatKg).filter { $0 > 0 }.max() ?? 0
-            let bestBench = valid.map(\.best3BenchKg).filter { $0 > 0 }.max() ?? 0
-            let bestDeadlift = valid.map(\.best3DeadliftKg).filter { $0 > 0 }.max() ?? 0
-            let bestTotal = valid.map(\.totalKg).filter { $0 > 0 }.max() ?? 0
-            athlete.bestSquatKg = bestSquat
-            athlete.bestBenchKg = bestBench
-            athlete.bestDeadliftKg = bestDeadlift
-            athlete.bestTotalKg = bestTotal
+            let prs = PrCalculator.calculate(from: fresh)
+            athlete.bestSquatKg = prs.bestSquat
+            athlete.bestBenchKg = prs.bestBench
+            athlete.bestDeadliftKg = prs.bestDeadlift
+            athlete.bestTotalKg = prs.bestTotal
 
             try? modelContext.save()
         } catch {

@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.gooseco.myliftsquad.MyLiftSquadApp
+import com.gooseco.myliftsquad.data.PrCalculator
 import com.gooseco.myliftsquad.data.api.OplAthlete
 import com.gooseco.myliftsquad.data.api.OplApiService
 import com.gooseco.myliftsquad.data.db.Athlete
@@ -84,8 +85,12 @@ class SquadDetailViewModel(app: Application) : AndroidViewModel(app) {
             initialValue = 0
         )
 
-    val existingSlugs: StateFlow<Set<String>> = athleteDao.getAllSlugs()
-        .map { it.toSet() }
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val existingSlugs: StateFlow<Set<String>> = squadIdFlow
+        .flatMapLatest { id ->
+            if (id >= 0) athleteDao.getSlugsBySquad(id).map { it.toSet() }
+            else flow { emit(emptySet()) }
+        }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
@@ -183,22 +188,13 @@ class SquadDetailViewModel(app: Application) : AndroidViewModel(app) {
                     // competitions (bench-only, deadlift-only, etc.).
                     // Exclude disqualified/no-show results. Negative values in OPL
                     // indicate a bomb-out and are excluded.
-                    val disqualifiedPlaces = setOf("DQ", "DD", "DNS", "NS", "G")
-                    val validEntries = entries.filter { it.place !in disqualifiedPlaces }
-                    val bestSquat = validEntries
-                        .mapNotNull { it.best3SquatKg?.takeIf { v -> v > 0 } }
-                        .maxOrNull()
-                    val bestBench = validEntries
-                        .mapNotNull { it.best3BenchKg?.takeIf { v -> v > 0 } }
-                        .maxOrNull()
-                    val bestDeadlift = validEntries
-                        .mapNotNull { it.best3DeadliftKg?.takeIf { v -> v > 0 } }
-                        .maxOrNull()
+                    val prs = PrCalculator.calculate(entries)
                     athleteDao.updatePRs(
                         athleteId = athleteId,
-                        bestSquat = bestSquat,
-                        bestBench = bestBench,
-                        bestDeadlift = bestDeadlift
+                        bestSquat = prs.bestSquat,
+                        bestBench = prs.bestBench,
+                        bestDeadlift = prs.bestDeadlift,
+                        bestTotal = prs.bestTotal
                     )
                 }
             }
@@ -239,7 +235,7 @@ class SquadDetailViewModel(app: Application) : AndroidViewModel(app) {
         val squadId = squadIdFlow.value
         if (squadId < 0) return
         viewModelScope.launch {
-            if (athleteDao.getAthleteBySlug(oplAthlete.slug) != null) return@launch
+            if (athleteDao.getAthleteBySlugAndSquad(oplAthlete.slug, squadId) != null) return@launch
             athleteDao.insert(
                 Athlete(
                     squadId = squadId,

@@ -17,11 +17,14 @@
 		453C796F05B45380F9A6C75E /* BackupModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5968D96416CBBA2C1D3553A9 /* BackupModels.swift */; };
 		4A1836A3B73B144DFED363CE /* OplModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF75DD4387FC39FC137DC9E9 /* OplModels.swift */; };
 		57B154ADD7CFD90C1372BF5F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C7451EA7632DEF5C348F4B73 /* Assets.xcassets */; };
+		6F30414296D679F763016BD6 /* SlugScopeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B14D958742AC04239FE253C5 /* SlugScopeTests.swift */; };
+		9623F033867556C10A46BA18 /* PrCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1D99F297E684DE7A14D8DC5 /* PrCalculator.swift */; };
 		9F6542F4DF89A7CFE91BA7A7 /* StoreKitManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 506E7633A5AF1BBF7DF6559E /* StoreKitManager.swift */; };
 		A1426F4FD2BF34BEFD0DF7D8 /* SettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 160D1CB055D2C58756287CFF /* SettingsViewModel.swift */; };
 		AB7B1F3C467ED786F8A3E78A /* Squad.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84024A53DF1AF223D15A837A /* Squad.swift */; };
 		C9EDCB4DAE277E8F73E70B57 /* SearchAthleteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32894700EF07689F737B5FA4 /* SearchAthleteView.swift */; };
 		CB6266A1DD9A3AFBC48E8E33 /* AthleteDetailSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8FB77174F6365B2841A6252 /* AthleteDetailSheet.swift */; };
+		D6BDD4BE8DE76BAF6A65C9D5 /* PrCalculatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6325A7AAA831F7758E191384 /* PrCalculatorTests.swift */; };
 		E1BB25D3F517491DF4248839 /* SquadsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A2E97008362F1E399F1A11 /* SquadsViewModel.swift */; };
 		E478CA63C9C092B890EA22BC /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74E07FDBF48B0C9D3A6F277B /* ContentView.swift */; };
 		E79BB299EB7673235F7F0409 /* MyLiftSquadApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0313FADF9F5B04230C3183CD /* MyLiftSquadApp.swift */; };
@@ -31,6 +34,16 @@
 		FDE475508CAEEFE80454965F /* SquadsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFF5D2E15B157333C546ECFB /* SquadsView.swift */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		16957589305F42294F3EB331 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 72B52FCE698034AAB4071050 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D07118625497CFF88F30A77B;
+			remoteInfo = MyLiftSquad;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
 		0149F8071235573CC0B9020C /* CompetitionEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompetitionEntry.swift; sourceTree = "<group>"; };
 		0313FADF9F5B04230C3183CD /* MyLiftSquadApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MyLiftSquadApp.swift; sourceTree = "<group>"; };
@@ -39,10 +52,11 @@
 		160D1CB055D2C58756287CFF /* SettingsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewModel.swift; sourceTree = "<group>"; };
 		32894700EF07689F737B5FA4 /* SearchAthleteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchAthleteView.swift; sourceTree = "<group>"; };
 		34D292DCC3BB668525EEC467 /* SBDText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SBDText.swift; sourceTree = "<group>"; };
-		42B68F5D442E40C614FAE4D5 /* MyLiftSquad.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MyLiftSquad.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		42B68F5D442E40C614FAE4D5 /* MyLiftSquad.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = MyLiftSquad.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		506E7633A5AF1BBF7DF6559E /* StoreKitManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreKitManager.swift; sourceTree = "<group>"; };
 		5968D96416CBBA2C1D3553A9 /* BackupModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackupModels.swift; sourceTree = "<group>"; };
 		62E37F3AA209CAC97785668E /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		6325A7AAA831F7758E191384 /* PrCalculatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrCalculatorTests.swift; sourceTree = "<group>"; };
 		74E07FDBF48B0C9D3A6F277B /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		77132CA125AC38719E254C09 /* SquadDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SquadDetailView.swift; sourceTree = "<group>"; };
 		84024A53DF1AF223D15A837A /* Squad.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Squad.swift; sourceTree = "<group>"; };
@@ -51,10 +65,13 @@
 		A1A2E97008362F1E399F1A11 /* SquadsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SquadsViewModel.swift; sourceTree = "<group>"; };
 		A7FA511A4050ADABC799C838 /* Athlete.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Athlete.swift; sourceTree = "<group>"; };
 		AF75DD4387FC39FC137DC9E9 /* OplModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OplModels.swift; sourceTree = "<group>"; };
+		B14D958742AC04239FE253C5 /* SlugScopeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SlugScopeTests.swift; sourceTree = "<group>"; };
 		BEE016F439CB81B36B772F58 /* Quotes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Quotes.swift; sourceTree = "<group>"; };
 		BFA54A7F4AFE1E304AB6B17F /* SearchViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchViewModel.swift; sourceTree = "<group>"; };
 		C7451EA7632DEF5C348F4B73 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		D1D99F297E684DE7A14D8DC5 /* PrCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrCalculator.swift; sourceTree = "<group>"; };
 		E8FB77174F6365B2841A6252 /* AthleteDetailSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AthleteDetailSheet.swift; sourceTree = "<group>"; };
+		ECE05C36BCF41F760E2202A1 /* MyLiftSquadTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = MyLiftSquadTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		EFF5D2E15B157333C546ECFB /* SquadsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SquadsView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -86,6 +103,7 @@
 			isa = PBXGroup;
 			children = (
 				5968D96416CBBA2C1D3553A9 /* BackupModels.swift */,
+				D1D99F297E684DE7A14D8DC5 /* PrCalculator.swift */,
 				BEE016F439CB81B36B772F58 /* Quotes.swift */,
 				506E7633A5AF1BBF7DF6559E /* StoreKitManager.swift */,
 				9D2099D52960E151089E3B1A /* API */,
@@ -156,8 +174,18 @@
 			isa = PBXGroup;
 			children = (
 				42B68F5D442E40C614FAE4D5 /* MyLiftSquad.app */,
+				ECE05C36BCF41F760E2202A1 /* MyLiftSquadTests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		DE7C37A5855C9672E86374D1 /* MyLiftSquadTests */ = {
+			isa = PBXGroup;
+			children = (
+				6325A7AAA831F7758E191384 /* PrCalculatorTests.swift */,
+				B14D958742AC04239FE253C5 /* SlugScopeTests.swift */,
+			);
+			path = MyLiftSquadTests;
 			sourceTree = "<group>";
 		};
 		F4A592D573035A87C7DF4AC4 /* DB */ = {
@@ -173,6 +201,7 @@
 		F726DC5A6C66986610B14E25 = {
 			isa = PBXGroup;
 			children = (
+				DE7C37A5855C9672E86374D1 /* MyLiftSquadTests */,
 				7A6FD0327EB76ACA7D7A3313 /* Resources */,
 				7DB16BA1CBA5EC18FA8FE332 /* Sources */,
 				D9EDF2499EC3C1F3515086C5 /* Products */,
@@ -190,6 +219,24 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		03A60E8564B3C4F57B2EF17E /* MyLiftSquadTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 08D4C942AB299849FCEC4C5D /* Build configuration list for PBXNativeTarget "MyLiftSquadTests" */;
+			buildPhases = (
+				F812D1208774ECAABA7AFC11 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				C909425CB86418265F779F18 /* PBXTargetDependency */,
+			);
+			name = MyLiftSquadTests;
+			packageProductDependencies = (
+			);
+			productName = MyLiftSquadTests;
+			productReference = ECE05C36BCF41F760E2202A1 /* MyLiftSquadTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		D07118625497CFF88F30A77B /* MyLiftSquad */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = D659D23E5351C124243C33BA /* Build configuration list for PBXNativeTarget "MyLiftSquad" */;
@@ -217,6 +264,9 @@
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1600;
 				TargetAttributes = {
+					03A60E8564B3C4F57B2EF17E = {
+						DevelopmentTeam = RG72PZGLF9;
+					};
 					D07118625497CFF88F30A77B = {
 						DevelopmentTeam = RG72PZGLF9;
 					};
@@ -237,6 +287,7 @@
 			projectRoot = "";
 			targets = (
 				D07118625497CFF88F30A77B /* MyLiftSquad */,
+				03A60E8564B3C4F57B2EF17E /* MyLiftSquadTests */,
 			);
 		};
 /* End PBXProject section */
@@ -266,6 +317,7 @@
 				E79BB299EB7673235F7F0409 /* MyLiftSquadApp.swift in Sources */,
 				FB99AAF908CB4DF1D3588028 /* OplApiService.swift in Sources */,
 				4A1836A3B73B144DFED363CE /* OplModels.swift in Sources */,
+				9623F033867556C10A46BA18 /* PrCalculator.swift in Sources */,
 				33E2AEEC8DE2FC8198F532E4 /* Quotes.swift in Sources */,
 				EC117775BFB5DD92ED7DFA63 /* SBDText.swift in Sources */,
 				C9EDCB4DAE277E8F73E70B57 /* SearchAthleteView.swift in Sources */,
@@ -281,7 +333,24 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		F812D1208774ECAABA7AFC11 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D6BDD4BE8DE76BAF6A65C9D5 /* PrCalculatorTests.swift in Sources */,
+				6F30414296D679F763016BD6 /* SlugScopeTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		C909425CB86418265F779F18 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = D07118625497CFF88F30A77B /* MyLiftSquad */;
+			targetProxy = 16957589305F42294F3EB331 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		5D25213334CEA95B4DAB9E54 /* Debug */ = {
@@ -318,7 +387,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 4;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = RG72PZGLF9;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -339,7 +408,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				INFOPLIST_FILE = MyLiftSquad/Resources/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 1.0.0;
+				MARKETING_VERSION = 1.3.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -349,6 +418,40 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		69175B7EEA6EE3CA15611854 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/MyLiftSquad.app/MyLiftSquad";
+			};
+			name = Release;
+		};
+		8659DF13DB5A3D4F45789BBE /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/MyLiftSquad.app/MyLiftSquad";
 			};
 			name = Debug;
 		};
@@ -364,7 +467,6 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.gooseco.myliftsquad;
 				PROVISIONING_PROFILE_SPECIFIER = "MyLiftSquad AppStore Distribution";
 				SDKROOT = iphoneos;
@@ -385,7 +487,6 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.gooseco.myliftsquad;
 				SDKROOT = iphoneos;
 				SWIFT_VERSION = 6.0;
@@ -427,7 +528,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 4;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = RG72PZGLF9;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -442,7 +543,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				INFOPLIST_FILE = MyLiftSquad/Resources/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 1.0.0;
+				MARKETING_VERSION = 1.3.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = com.gooseco.myliftsquad;
@@ -457,6 +558,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		08D4C942AB299849FCEC4C5D /* Build configuration list for PBXNativeTarget "MyLiftSquadTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8659DF13DB5A3D4F45789BBE /* Debug */,
+				69175B7EEA6EE3CA15611854 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
 		892C107E51F35CB6CF63D8A8 /* Build configuration list for PBXProject "MyLiftSquad" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
