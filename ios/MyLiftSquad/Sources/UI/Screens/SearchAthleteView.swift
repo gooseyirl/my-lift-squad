@@ -53,6 +53,7 @@ struct SearchAthleteView: View {
                     Button {
                         vm.query = ""
                         vm.results = []
+                        vm.canLoadMore = false
                     } label: {
                         Image(systemName: "xmark.circle.fill")
                             .foregroundColor(.secondary)
@@ -89,12 +90,39 @@ struct SearchAthleteView: View {
                     Spacer()
                 }
             } else {
-                List(vm.results, id: \.slug) { athlete in
-                    SearchResultRow(athlete: athlete, isAdded: vm.addedSlugs.contains(athlete.slug)) {
-                        vm.addAthlete(athlete)
+                List {
+                    ForEach(vm.results, id: \.slug) { athlete in
+                        SearchResultRow(athlete: athlete, isAdded: vm.addedSlugs.contains(athlete.slug)) {
+                            vm.addAthlete(athlete)
+                        }
+                    }
+
+                    if vm.canLoadMore || vm.isLoadingMore {
+                        HStack {
+                            Spacer()
+                            if vm.isLoadingMore {
+                                ProgressView()
+                                    .padding(.vertical, 8)
+                            } else {
+                                Button("See more results") {
+                                    vm.loadMore()
+                                }
+                                .padding(.vertical, 8)
+                            }
+                            Spacer()
+                        }
+                        .listRowSeparator(.hidden)
                     }
                 }
                 .listStyle(.plain)
+                .alert("No more results", isPresented: Binding(
+                    get: { vm.showNoMoreResults },
+                    set: { vm.showNoMoreResults = $0 }
+                )) {
+                    Button("OK", role: .cancel) { vm.showNoMoreResults = false }
+                } message: {
+                    Text("There are no more athletes matching \"\(vm.query)\".")
+                }
             }
         }
     }

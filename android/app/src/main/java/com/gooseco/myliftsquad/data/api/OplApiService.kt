@@ -10,6 +10,14 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.util.concurrent.TimeUnit
 
+data class SearchPage(
+    val athletes: List<OplAthlete>,
+    val nextMenStart: Int?,
+    val nextWomenStart: Int?
+) {
+    val hasMore: Boolean get() = nextMenStart != null || nextWomenStart != null
+}
+
 class OplApiService {
 
     private val client = OkHttpClient.Builder()
@@ -21,23 +29,36 @@ class OplApiService {
 
     /**
      * Search both men and women paths in parallel, combine and deduplicate by slug.
+     * Pass nextMenStart/nextWomenStart from a previous SearchPage to load more results.
+     * A null start means that gender path is exhausted and will be skipped.
      */
-    suspend fun searchAthletes(query: String): List<OplAthlete> = coroutineScope {
-        val menDeferred = async { searchPath("men", query) }
-        val womenDeferred = async { searchPath("women", query) }
+    suspend fun searchAthletes(
+        query: String,
+        menStart: Int? = 0,
+        womenStart: Int? = 0
+    ): SearchPage = coroutineScope {
+        val menDeferred = if (menStart != null) {
+            async { searchPath("men", query, menStart) }
+        } else {
+            async { Pair(emptyList<OplAthlete>(), null) }
+        }
+        val womenDeferred = if (womenStart != null) {
+            async { searchPath("women", query, womenStart) }
+        } else {
+            async { Pair(emptyList<OplAthlete>(), null) }
+        }
 
-        val men = menDeferred.await()
-        val women = womenDeferred.await()
+        val (menAthletes, nextMenStart) = menDeferred.await()
+        val (womenAthletes, nextWomenStart) = womenDeferred.await()
 
-        // Combine, deduplicate by slug, and filter to name matches only.
-        // The OPL rankings API returns athletes ranked near the search position,
-        // not just athletes whose name matches — so we filter client-side.
         val combined = LinkedHashMap<String, OplAthlete>()
-        for (athlete in men + women) {
+        for (athlete in menAthletes + womenAthletes) {
             combined.putIfAbsent(athlete.slug, athlete)
         }
         val queryLower = query.trim().lowercase()
-        combined.values.filter { it.name.lowercase().contains(queryLower) }
+        val filtered = combined.values.filter { it.name.lowercase().contains(queryLower) }
+
+        SearchPage(filtered, nextMenStart, nextWomenStart)
     }
 
     /**
@@ -117,38 +138,44 @@ class OplApiService {
     }
 
     /**
-     * Search a specific gender path, iterating up to 3 times to find multiple matches.
-     * Each iteration advances start past the previous match to find the next one.
+     * Search a specific gender path, doing up to 3 iterations from startAt.
+     * Returns the athletes found and the next start position (null if exhausted).
      */
-    private suspend fun searchPath(path: String, query: String): List<OplAthlete> =
+    private suspend fun searchPath(
+        path: String,
+        query: String,
+        startAt: Int
+    ): Pair<List<OplAthlete>, Int?> =
         withContext(Dispatchers.IO) {
             try {
                 val accumulated = LinkedHashMap<String, OplAthlete>()
-                var start = 0
+                var start = startAt
+                var nextStart: Int? = null
 
-                repeat(3) {
+                for (i in 0 until 3) {
                     val searchUrl = "$baseUrl/search/rankings/$path" +
                         "?q=${encode(query)}&start=$start&lang=en&units=kg"
-                    val searchResponse = get(searchUrl) ?: return@repeat
+                    val searchResponse = get(searchUrl) ?: break
                     val searchJson = JsonParser.parseString(searchResponse).asJsonObject
                     val nextIndex = searchJson.get("next_index")
-                        ?.takeIf { !it.isJsonNull }?.asInt ?: return@repeat
+                        ?.takeIf { !it.isJsonNull }?.asInt ?: break
 
                     val rowsUrl = "$baseUrl/rankings/$path" +
                         "?start=$nextIndex&end=${nextIndex + 24}&lang=en&units=kg"
-                    val rowsResponse = get(rowsUrl) ?: return@repeat
+                    val rowsResponse = get(rowsUrl) ?: break
                     val rowsJson = JsonParser.parseString(rowsResponse).asJsonObject
-                    val rows = rowsJson.getAsJsonArray("rows") ?: return@repeat
+                    val rows = rowsJson.getAsJsonArray("rows") ?: break
 
                     for (athlete in parseRows(rows)) {
                         accumulated.putIfAbsent(athlete.slug, athlete)
                     }
                     start = nextIndex + 1
+                    nextStart = start
                 }
 
-                accumulated.values.toList()
+                Pair(accumulated.values.toList(), nextStart)
             } catch (e: Exception) {
-                emptyList()
+                Pair(emptyList(), null)
             }
         }
 

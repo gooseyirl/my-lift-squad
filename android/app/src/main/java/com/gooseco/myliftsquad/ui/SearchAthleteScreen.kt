@@ -16,6 +16,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -23,9 +25,11 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -60,6 +64,9 @@ fun SearchAthleteScreen(
     val query by searchViewModel.searchQuery.collectAsState()
     val results by searchViewModel.searchResults.collectAsState()
     val isLoading by searchViewModel.isLoading.collectAsState()
+    val isLoadingMore by searchViewModel.isLoadingMore.collectAsState()
+    val canLoadMore by searchViewModel.canLoadMore.collectAsState()
+    val showNoMoreResults by searchViewModel.showNoMoreResults.collectAsState()
     val error by searchViewModel.error.collectAsState()
     val existingSlugs by squadDetailViewModel.existingSlugs.collectAsState()
 
@@ -67,6 +74,19 @@ fun SearchAthleteScreen(
 
     LaunchedEffect(Unit) {
         focusRequester.requestFocus()
+    }
+
+    if (showNoMoreResults) {
+        AlertDialog(
+            onDismissRequest = { searchViewModel.dismissNoMoreResults() },
+            title = { Text("No more results") },
+            text = { Text("There are no more athletes matching \"$query\".") },
+            confirmButton = {
+                TextButton(onClick = { searchViewModel.dismissNoMoreResults() }) {
+                    Text("OK")
+                }
+            }
+        )
     }
 
     Scaffold(
@@ -192,6 +212,30 @@ fun SearchAthleteScreen(
                                     }
                                 }
                             )
+                        }
+
+                        if (canLoadMore || isLoadingMore) {
+                            item {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 8.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    if (isLoadingMore) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(32.dp),
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                    } else {
+                                        OutlinedButton(
+                                            onClick = { searchViewModel.loadMore() }
+                                        ) {
+                                            Text("See more results")
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }

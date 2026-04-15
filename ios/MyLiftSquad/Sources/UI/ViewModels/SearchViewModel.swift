@@ -8,12 +8,19 @@ final class SearchViewModel {
     var query = ""
     var results: [OplAthlete] = []
     var isSearching = false
+    var isLoadingMore = false
+    var canLoadMore = false
+    var showNoMoreResults = false
     var addedSlugs: Set<String> = []
     var errorMessage: String?
 
     private var searchTask: Task<Void, Never>?
     private let modelContext: ModelContext
     private let squad: Squad
+
+    // Pagination cursors — nil means that gender path is exhausted
+    private var nextMenStart: Int? = 0
+    private var nextWomenStart: Int? = 0
 
     init(squad: Squad, modelContext: ModelContext) {
         self.squad = squad
@@ -26,6 +33,7 @@ final class SearchViewModel {
         let q = query
         guard q.count >= 2 else {
             results = []
+            canLoadMore = false
             return
         }
         searchTask = Task {
@@ -36,12 +44,53 @@ final class SearchViewModel {
     }
 
     private func performSearch(_ q: String) async {
+        nextMenStart = 0
+        nextWomenStart = 0
         isSearching = true
+        canLoadMore = false
         defer { isSearching = false }
         do {
-            results = try await OplApiService.shared.searchAthletes(query: q)
+            let page = try await OplApiService.shared.searchAthletes(
+                query: q,
+                menStart: nextMenStart,
+                womenStart: nextWomenStart
+            )
+            results = page.athletes
+            nextMenStart = page.nextMenStart
+            nextWomenStart = page.nextWomenStart
+            canLoadMore = page.hasMore
         } catch {
             errorMessage = error.localizedDescription
+        }
+    }
+
+    func loadMore() {
+        guard !isLoadingMore, canLoadMore else { return }
+        let q = query
+        guard q.count >= 2 else { return }
+        Task {
+            isLoadingMore = true
+            defer { isLoadingMore = false }
+            do {
+                let page = try await OplApiService.shared.searchAthletes(
+                    query: q,
+                    menStart: nextMenStart,
+                    womenStart: nextWomenStart
+                )
+                var seen = Set(results.map(\.slug))
+                for athlete in page.athletes where !seen.contains(athlete.slug) {
+                    seen.insert(athlete.slug)
+                    results.append(athlete)
+                }
+                nextMenStart = page.nextMenStart
+                nextWomenStart = page.nextWomenStart
+                canLoadMore = page.hasMore
+                if !page.hasMore {
+                    showNoMoreResults = true
+                }
+            } catch {
+                errorMessage = error.localizedDescription
+            }
         }
     }
 

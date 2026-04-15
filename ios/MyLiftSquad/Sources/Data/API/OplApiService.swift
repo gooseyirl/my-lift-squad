@@ -1,5 +1,12 @@
 import Foundation
 
+struct SearchPage {
+    let athletes: [OplAthlete]
+    let nextMenStart: Int?
+    let nextWomenStart: Int?
+    var hasMore: Bool { nextMenStart != nil || nextWomenStart != nil }
+}
+
 actor OplApiService {
     static let shared = OplApiService()
     private let baseURL = "https://www.openpowerlifting.org/api"
@@ -8,16 +15,23 @@ actor OplApiService {
 
     // MARK: - Search
 
-    func searchAthletes(query: String) async throws -> [OplAthlete] {
+    /// Search for athletes. Pass nextMenStart/nextWomenStart from a previous SearchPage
+    /// to load more results. A nil start means that gender path is exhausted and will be skipped.
+    func searchAthletes(query: String, menStart: Int? = 0, womenStart: Int? = 0) async throws -> SearchPage {
         let trimmed = query.trimmingCharacters(in: .whitespaces)
-        guard trimmed.count >= 2 else { return [] }
+        guard trimmed.count >= 2 else { return SearchPage(athletes: [], nextMenStart: nil, nextWomenStart: nil) }
 
         let encoded = trimmed.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? trimmed
 
-        async let menResults = searchGender("men", query: encoded)
-        async let womenResults = searchGender("women", query: encoded)
+        async let menResult: ([OplAthlete], Int?) = menStart != nil
+            ? searchGender("men", query: encoded, startAt: menStart!)
+            : ([], nil)
+        async let womenResult: ([OplAthlete], Int?) = womenStart != nil
+            ? searchGender("women", query: encoded, startAt: womenStart!)
+            : ([], nil)
 
-        let (men, women) = try await (menResults, womenResults)
+        let (men, nextMenStart) = try await menResult
+        let (women, nextWomenStart) = try await womenResult
 
         var seen = Set<String>()
         var combined: [OplAthlete] = []
@@ -27,13 +41,16 @@ actor OplApiService {
                 combined.append(athlete)
             }
         }
-        return combined
+        return SearchPage(athletes: combined, nextMenStart: nextMenStart, nextWomenStart: nextWomenStart)
     }
 
-    private func searchGender(_ gender: String, query: String) async throws -> [OplAthlete] {
+    /// Search a specific gender path, doing up to 3 iterations from startAt.
+    /// Returns the athletes found and the next start position (nil if exhausted).
+    private func searchGender(_ gender: String, query: String, startAt: Int) async throws -> ([OplAthlete], Int?) {
         let queryLower = query.removingPercentEncoding?.lowercased() ?? query.lowercased()
         var accumulated: [String: OplAthlete] = [:]
-        var start = 0
+        var start = startAt
+        var nextStart: Int? = nil
 
         for _ in 0..<3 {
             let searchURL = "\(baseURL)/search/rankings/\(gender)?q=\(query)&start=\(start)&lang=en&units=kg"
@@ -74,9 +91,10 @@ actor OplApiService {
             }
 
             start = nextIndex + 1
+            nextStart = start
         }
 
-        return Array(accumulated.values)
+        return (Array(accumulated.values), nextStart)
     }
 
     // MARK: - Competition History
