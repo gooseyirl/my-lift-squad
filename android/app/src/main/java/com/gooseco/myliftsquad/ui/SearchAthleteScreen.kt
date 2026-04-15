@@ -16,8 +16,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -29,7 +27,6 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -68,25 +65,13 @@ fun SearchAthleteScreen(
     val canLoadMore by searchViewModel.canLoadMore.collectAsState()
     val showNoMoreResults by searchViewModel.showNoMoreResults.collectAsState()
     val error by searchViewModel.error.collectAsState()
+
     val existingSlugs by squadDetailViewModel.existingSlugs.collectAsState()
 
     val focusRequester = remember { FocusRequester() }
 
     LaunchedEffect(Unit) {
         focusRequester.requestFocus()
-    }
-
-    if (showNoMoreResults) {
-        AlertDialog(
-            onDismissRequest = { searchViewModel.dismissNoMoreResults() },
-            title = { Text("No more results") },
-            text = { Text("There are no more athletes matching \"$query\".") },
-            confirmButton = {
-                TextButton(onClick = { searchViewModel.dismissNoMoreResults() }) {
-                    Text("OK")
-                }
-            }
-        )
     }
 
     Scaffold(
@@ -214,26 +199,28 @@ fun SearchAthleteScreen(
                             )
                         }
 
-                        if (canLoadMore || isLoadingMore) {
-                            item {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 8.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    if (isLoadingMore) {
-                                        CircularProgressIndicator(
-                                            modifier = Modifier.size(32.dp),
-                                            color = MaterialTheme.colorScheme.primary
-                                        )
-                                    } else {
-                                        OutlinedButton(
-                                            onClick = { searchViewModel.loadMore() }
-                                        ) {
-                                            Text("See more results")
-                                        }
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 8.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                when {
+                                    isLoadingMore -> CircularProgressIndicator(
+                                        modifier = Modifier.size(32.dp),
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                    canLoadMore -> OutlinedButton(
+                                        onClick = { searchViewModel.loadMore() }
+                                    ) {
+                                        Text("See more results")
                                     }
+                                    showNoMoreResults -> Text(
+                                        text = "No more results",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
                                 }
                             }
                         }

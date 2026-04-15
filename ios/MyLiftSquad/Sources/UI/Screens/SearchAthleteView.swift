@@ -97,32 +97,27 @@ struct SearchAthleteView: View {
                         }
                     }
 
-                    if vm.canLoadMore || vm.isLoadingMore {
-                        HStack {
-                            Spacer()
-                            if vm.isLoadingMore {
-                                ProgressView()
-                                    .padding(.vertical, 8)
-                            } else {
-                                Button("See more results") {
-                                    vm.loadMore()
-                                }
+                    HStack {
+                        Spacer()
+                        if vm.isLoadingMore {
+                            ProgressView()
                                 .padding(.vertical, 8)
+                        } else if vm.canLoadMore {
+                            Button("See more results") {
+                                vm.loadMore()
                             }
-                            Spacer()
+                            .padding(.vertical, 8)
+                        } else if vm.showNoMoreResults {
+                            Text("No more results")
+                                .font(.footnote)
+                                .foregroundColor(.secondary)
+                                .padding(.vertical, 8)
                         }
-                        .listRowSeparator(.hidden)
+                        Spacer()
                     }
+                    .listRowSeparator(.hidden)
                 }
                 .listStyle(.plain)
-                .alert("No more results", isPresented: Binding(
-                    get: { vm.showNoMoreResults },
-                    set: { vm.showNoMoreResults = $0 }
-                )) {
-                    Button("OK", role: .cancel) { vm.showNoMoreResults = false }
-                } message: {
-                    Text("There are no more athletes matching \"\(vm.query)\".")
-                }
             }
         }
     }
