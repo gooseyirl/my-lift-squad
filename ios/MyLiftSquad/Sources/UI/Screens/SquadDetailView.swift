@@ -31,6 +31,23 @@ struct SquadDetailView: View {
                     }
                     .disabled(viewModel?.isShareLoading == true || viewModel?.athletes.isEmpty == true)
 
+                    Menu {
+                        ForEach(AthleteSortOption.allCases, id: \.self) { option in
+                            Button {
+                                viewModel?.setSortOption(option)
+                            } label: {
+                                if viewModel?.sortOption == option {
+                                    Label(option.rawValue, systemImage: "checkmark")
+                                } else {
+                                    Text(option.rawValue)
+                                }
+                            }
+                        }
+                    } label: {
+                        Image(systemName: "arrow.up.arrow.down")
+                    }
+                    .disabled(viewModel?.athletes.isEmpty == true)
+
                     Button {
                         Task { await viewModel?.refreshAll() }
                     } label: {

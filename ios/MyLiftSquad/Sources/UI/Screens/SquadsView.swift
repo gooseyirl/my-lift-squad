@@ -69,6 +69,21 @@ struct SquadsView: View {
             } message: {
                 Text("Are you sure you want to delete this squad and all its athletes?")
             }
+            .alert("Rename Squad", isPresented: Binding(
+                get: { viewModel?.showRenameDialog ?? false },
+                set: { if !$0 { viewModel?.clearRenameDialog() } }
+            )) {
+                TextField("Squad name", text: Binding(
+                    get: { viewModel?.renameNewName ?? "" },
+                    set: { viewModel?.renameNewName = $0 }
+                ))
+                Button("Rename") { viewModel?.confirmRename() }
+                Button("Cancel", role: .cancel) { viewModel?.clearRenameDialog() }
+            } message: {
+                if let err = viewModel?.renameErrorMessage {
+                    Text(err)
+                }
+            }
             .alert("Support Developer", isPresented: $showSupportAlert) {
                 Button("Support \u{2764}\u{FE0F}") { Task { await store.purchase() } }
                 Button("Restore Purchase") { Task { await store.restorePurchases() } }
@@ -133,6 +148,8 @@ struct SquadsView: View {
                             SquadRowView(squad: squad) {
                                 squadToDelete = squad
                                 showDeleteConfirm = true
+                            } onRename: {
+                                vm.beginRename(squad)
                             }
                         }
                     }
@@ -251,6 +268,7 @@ struct SquadsView: View {
 struct SquadRowView: View {
     let squad: Squad
     let onDelete: () -> Void
+    let onRename: () -> Void
 
     var body: some View {
         NavigationLink {
@@ -276,6 +294,11 @@ struct SquadRowView: View {
             .background(Color(.systemBackground))
         }
         .contextMenu {
+            Button {
+                onRename()
+            } label: {
+                Label("Rename Squad", systemImage: "pencil")
+            }
             Button(role: .destructive) {
                 onDelete()
             } label: {

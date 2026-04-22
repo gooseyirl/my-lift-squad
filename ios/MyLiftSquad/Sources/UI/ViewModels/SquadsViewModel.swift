@@ -12,6 +12,12 @@ final class SquadsViewModel {
     var showQuote = false
     var currentQuote = ""
 
+    // Rename squad
+    var showRenameDialog = false
+    var squadToRename: Squad?
+    var renameNewName = ""
+    var renameErrorMessage: String?
+
     // Import squad
     var showImportDialog = false
     var importCode = ""
@@ -157,6 +163,41 @@ final class SquadsViewModel {
         showImportDialog = false
         importCode = ""
         importError = nil
+    }
+
+    func beginRename(_ squad: Squad) {
+        squadToRename = squad
+        renameNewName = squad.name
+        renameErrorMessage = nil
+        showRenameDialog = true
+    }
+
+    func confirmRename() {
+        guard let squad = squadToRename else { return }
+        let trimmed = renameNewName.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { return }
+
+        let allSquads = FetchDescriptor<Squad>(predicate: #Predicate { !$0.isSystem })
+        let existing = (try? modelContext.fetch(allSquads)) ?? []
+        guard !existing.contains(where: { $0.name.lowercased() == trimmed.lowercased() && $0.id != squad.id }) else {
+            renameErrorMessage = "A squad with this name already exists"
+            return
+        }
+
+        squad.name = trimmed
+        try? modelContext.save()
+        renameErrorMessage = nil
+        showRenameDialog = false
+        squadToRename = nil
+        renameNewName = ""
+        loadData()
+    }
+
+    func clearRenameDialog() {
+        showRenameDialog = false
+        squadToRename = nil
+        renameNewName = ""
+        renameErrorMessage = nil
     }
 
     func deleteSquad(_ squad: Squad) {
