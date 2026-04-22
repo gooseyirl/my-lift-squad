@@ -90,6 +90,7 @@ def _post(url: str, payload: dict) -> dict:
         headers={
             "Content-Type": "application/json",
             "Accept": "application/json",
+            "User-Agent": "myliftsquad-liftingcast-import/1.0",
         },
     )
     with urllib.request.urlopen(req, timeout=20) as resp:
