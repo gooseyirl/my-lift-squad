@@ -106,7 +106,7 @@ class SquadsViewModel(app: Application) : AndroidViewModel(app) {
 
                 shared.athletes.forEachIndexed { index, ref ->
                     _importProgress.value = "Fetching data for ${ref.name} (${index + 1} of $total)..."
-                    val athleteId = athleteDao.insert(
+                    athleteDao.insert(
                         Athlete(
                             squadId = squadId,
                             name = ref.name,
@@ -123,9 +123,10 @@ class SquadsViewModel(app: Application) : AndroidViewModel(app) {
                             gender = null
                         )
                     )
+                    val athleteId = athleteDao.getAthleteBySlugAndSquad(ref.slug, squadId)?.id
                     try {
                         val results = apiService.fetchCompetitionHistory(ref.slug)
-                        if (results.isNotEmpty()) {
+                        if (results.isNotEmpty() && athleteId != null) {
                             val entries = results.map { r ->
                                 CompetitionEntry(
                                     athleteSlug = ref.slug,
@@ -150,7 +151,7 @@ class SquadsViewModel(app: Application) : AndroidViewModel(app) {
                             val latest = competitionEntryDao.getLatestEntry(ref.slug)
                             if (latest != null) {
                                 athleteDao.updateLastCompDetails(
-                                    athleteId = athleteId.toInt(),
+                                    athleteId = athleteId,
                                     federation = latest.federation,
                                     weightClass = latest.weightClassKg,
                                     equipment = latest.equipment
@@ -158,7 +159,7 @@ class SquadsViewModel(app: Application) : AndroidViewModel(app) {
                             }
                             val prs = PrCalculator.calculate(entries)
                             athleteDao.updatePRs(
-                                athleteId = athleteId.toInt(),
+                                athleteId = athleteId,
                                 bestSquat = prs.bestSquat,
                                 bestBench = prs.bestBench,
                                 bestDeadlift = prs.bestDeadlift,
