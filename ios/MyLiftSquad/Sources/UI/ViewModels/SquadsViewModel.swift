@@ -48,10 +48,22 @@ final class SquadsViewModel {
     func createSquad() {
         let trimmed = newSquadName.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty else { return }
+
+        let lower = trimmed.lowercased()
+        let duplicate = FetchDescriptor<Squad>(
+            predicate: #Predicate { !$0.isSystem && $0.name.lowercased() == lower }
+        )
+        let count = (try? modelContext.fetchCount(duplicate)) ?? 0
+        guard count == 0 else {
+            errorMessage = "A squad with this name already exists"
+            return
+        }
+
         let squad = Squad(name: trimmed)
         modelContext.insert(squad)
         try? modelContext.save()
         newSquadName = ""
+        errorMessage = nil
         showNewSquadDialog = false
         loadData()
     }

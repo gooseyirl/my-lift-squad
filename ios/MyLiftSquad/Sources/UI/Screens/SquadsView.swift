@@ -46,7 +46,19 @@ struct SquadsView: View {
                 Button("Cancel", role: .cancel) {
                     viewModel?.showNewSquadDialog = false
                     viewModel?.newSquadName = ""
+                    viewModel?.errorMessage = nil
                 }
+            }
+            .alert("Name already taken", isPresented: Binding(
+                get: { viewModel?.errorMessage != nil },
+                set: { if !$0 {
+                    viewModel?.errorMessage = nil
+                    viewModel?.showNewSquadDialog = true
+                }}
+            )) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(viewModel?.errorMessage ?? "")
             }
             .alert("Delete Squad", isPresented: $showDeleteConfirm) {
                 Button("Delete", role: .destructive) {
