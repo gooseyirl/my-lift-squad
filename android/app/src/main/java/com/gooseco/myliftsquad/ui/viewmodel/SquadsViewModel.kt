@@ -4,9 +4,12 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.gooseco.myliftsquad.MyLiftSquadApp
+import com.gooseco.myliftsquad.data.PrCalculator
+import com.gooseco.myliftsquad.data.api.OplApiService
 import com.gooseco.myliftsquad.data.api.ShareApiService
 import com.gooseco.myliftsquad.data.db.Athlete
 import com.gooseco.myliftsquad.data.db.AthleteWithSquad
+import com.gooseco.myliftsquad.data.db.CompetitionEntry
 import com.gooseco.myliftsquad.data.db.Squad
 import com.gooseco.myliftsquad.data.db.SquadWithCount
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -24,10 +27,15 @@ class SquadsViewModel(app: Application) : AndroidViewModel(app) {
     private val db = (app as MyLiftSquadApp).database
     private val squadDao = db.squadDao()
     private val athleteDao = db.athleteDao()
+    private val competitionEntryDao = db.competitionEntryDao()
     private val shareApiService = ShareApiService()
+    private val apiService = OplApiService()
 
     private val _importLoading = MutableStateFlow(false)
     val importLoading: StateFlow<Boolean> = _importLoading.asStateFlow()
+
+    private val _importProgress = MutableStateFlow<String?>(null)
+    val importProgress: StateFlow<String?> = _importProgress.asStateFlow()
 
     private val _importError = MutableStateFlow<String?>(null)
     val importError: StateFlow<String?> = _importError.asStateFlow()
@@ -82,12 +90,23 @@ class SquadsViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             _importLoading.value = true
             _importError.value = null
+            _importProgress.value = "Fetching squad..."
             try {
                 val shared = shareApiService.importSquad(trimmed)
+
+                // Check for duplicate name
+                if (squadDao.countByName(shared.name) > 0) {
+                    _importError.value = "You already have a squad named \"${shared.name}\""
+                    return@launch
+                }
+
                 val squad = Squad(name = shared.name)
                 val squadId = squadDao.insert(squad).toInt()
-                shared.athletes.forEach { ref ->
-                    athleteDao.insert(
+                val total = shared.athletes.size
+
+                shared.athletes.forEachIndexed { index, ref ->
+                    _importProgress.value = "Fetching data for ${ref.name} (${index + 1} of $total)..."
+                    val athleteId = athleteDao.insert(
                         Athlete(
                             squadId = squadId,
                             name = ref.name,
@@ -104,12 +123,59 @@ class SquadsViewModel(app: Application) : AndroidViewModel(app) {
                             gender = null
                         )
                     )
+                    try {
+                        val results = apiService.fetchCompetitionHistory(ref.slug)
+                        if (results.isNotEmpty()) {
+                            val entries = results.map { r ->
+                                CompetitionEntry(
+                                    athleteSlug = ref.slug,
+                                    date = r.date,
+                                    meetName = r.meetName,
+                                    federation = r.federation,
+                                    equipment = r.equipment,
+                                    division = r.division,
+                                    weightClassKg = r.weightClassKg,
+                                    bodyweightKg = r.bodyweightKg,
+                                    best3SquatKg = r.best3SquatKg,
+                                    best3BenchKg = r.best3BenchKg,
+                                    best3DeadliftKg = r.best3DeadliftKg,
+                                    totalKg = r.totalKg,
+                                    place = r.place,
+                                    dots = r.dots,
+                                    meetCountry = r.meetCountry,
+                                    meetTown = r.meetTown
+                                )
+                            }
+                            competitionEntryDao.insertAll(entries)
+                            val latest = competitionEntryDao.getLatestEntry(ref.slug)
+                            if (latest != null) {
+                                athleteDao.updateLastCompDetails(
+                                    athleteId = athleteId.toInt(),
+                                    federation = latest.federation,
+                                    weightClass = latest.weightClassKg,
+                                    equipment = latest.equipment
+                                )
+                            }
+                            val prs = PrCalculator.calculate(entries)
+                            athleteDao.updatePRs(
+                                athleteId = athleteId.toInt(),
+                                bestSquat = prs.bestSquat,
+                                bestBench = prs.bestBench,
+                                bestDeadlift = prs.bestDeadlift,
+                                bestTotal = prs.bestTotal
+                            )
+                        }
+                    } catch (_: Exception) {
+                        // History fetch failing for one athlete shouldn't abort the whole import
+                    }
                 }
+
                 _importedSquadName.emit(shared.name)
             } catch (e: Exception) {
                 _importError.value = e.message ?: "Failed to import squad."
             } finally {
                 _importLoading.value = false
+                _importProgress.value = null
             }
         }
     }

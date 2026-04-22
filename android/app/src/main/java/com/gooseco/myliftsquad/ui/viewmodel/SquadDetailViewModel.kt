@@ -90,6 +90,9 @@ class SquadDetailViewModel(app: Application) : AndroidViewModel(app) {
     private val _maxFavouritesReached = MutableStateFlow(false)
     val maxFavouritesReached: StateFlow<Boolean> = _maxFavouritesReached
 
+    private val _squadFullError = MutableStateFlow(false)
+    val squadFullError: StateFlow<Boolean> = _squadFullError
+
     val favouriteCount: StateFlow<Int> = athleteDao.observeFavouriteCount()
         .stateIn(
             scope = viewModelScope,
@@ -236,6 +239,10 @@ class SquadDetailViewModel(app: Application) : AndroidViewModel(app) {
         _maxFavouritesReached.value = false
     }
 
+    fun dismissSquadFullError() {
+        _squadFullError.value = false
+    }
+
     fun shareSquad() {
         val currentSquad = squad.value ?: return
         val currentAthletes = athletes.value
@@ -270,6 +277,10 @@ class SquadDetailViewModel(app: Application) : AndroidViewModel(app) {
         val squadId = squadIdFlow.value
         if (squadId < 0) return
         viewModelScope.launch {
+            if (athletes.value.size >= 30) {
+                _squadFullError.value = true
+                return@launch
+            }
             if (athleteDao.getAthleteBySlugAndSquad(oplAthlete.slug, squadId) != null) return@launch
             athleteDao.insert(
                 Athlete(

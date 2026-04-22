@@ -106,6 +106,7 @@ fun SquadsScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val nameError by viewModel.nameError.collectAsState()
     val importLoading by viewModel.importLoading.collectAsState()
+    val importProgress by viewModel.importProgress.collectAsState()
     val importError by viewModel.importError.collectAsState()
     var showCreateDialog by remember { mutableStateOf(false) }
     var showImportDialog by remember { mutableStateOf(false) }
@@ -382,6 +383,7 @@ fun SquadsScreen(
     if (showImportDialog) {
         ImportSquadDialog(
             loading = importLoading,
+            progress = importProgress,
             errorMessage = importError,
             onConfirm = { code -> viewModel.importSquad(code) },
             onDismiss = {
@@ -653,6 +655,7 @@ private fun CreateSquadDialog(
 @Composable
 private fun ImportSquadDialog(
     loading: Boolean,
+    progress: String? = null,
     errorMessage: String? = null,
     onConfirm: (String) -> Unit,
     onDismiss: () -> Unit
@@ -661,21 +664,30 @@ private fun ImportSquadDialog(
 
     AlertDialog(
         onDismissRequest = { if (!loading) onDismiss() },
-        title = { Text("Import squad") },
+        title = { Text(if (loading) "Importing squad..." else "Import squad") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedTextField(
-                    value = code,
-                    onValueChange = { code = it.uppercase().take(6) },
-                    label = { Text("Share code") },
-                    placeholder = { Text("e.g. AB3X7K") },
-                    singleLine = true,
-                    isError = errorMessage != null,
-                    supportingText = errorMessage?.let { msg -> { Text(msg) } },
-                    modifier = Modifier.fillMaxWidth()
-                )
+                if (!loading) {
+                    OutlinedTextField(
+                        value = code,
+                        onValueChange = { code = it.uppercase().take(6) },
+                        label = { Text("Share code") },
+                        placeholder = { Text("e.g. AB3X7K") },
+                        singleLine = true,
+                        isError = errorMessage != null,
+                        supportingText = errorMessage?.let { msg -> { Text(msg) } },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
                 if (loading) {
                     LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                    progress?.let {
+                        Text(
+                            text = it,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
         },

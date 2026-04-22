@@ -87,6 +87,7 @@ fun SquadDetailScreen(
     val historyLoading by viewModel.historyLoading.collectAsState()
     val historyError by viewModel.historyError.collectAsState()
     val maxFavouritesReached by viewModel.maxFavouritesReached.collectAsState()
+    val squadFullError by viewModel.squadFullError.collectAsState()
     val favouriteCount by viewModel.favouriteCount.collectAsState()
     val shareCode by viewModel.shareCode.collectAsState()
     val shareLoading by viewModel.shareLoading.collectAsState()
@@ -105,6 +106,13 @@ fun SquadDetailScreen(
         if (maxFavouritesReached) {
             snackbarHostState.showSnackbar("Maximum 3 favourites allowed.")
             viewModel.dismissMaxFavouritesMessage()
+        }
+    }
+
+    LaunchedEffect(squadFullError) {
+        if (squadFullError) {
+            snackbarHostState.showSnackbar("Squads are limited to 30 athletes.")
+            viewModel.dismissSquadFullError()
         }
     }
 
