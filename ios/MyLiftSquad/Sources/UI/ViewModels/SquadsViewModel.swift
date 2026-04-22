@@ -49,12 +49,9 @@ final class SquadsViewModel {
         let trimmed = newSquadName.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty else { return }
 
-        let lower = trimmed.lowercased()
-        let duplicate = FetchDescriptor<Squad>(
-            predicate: #Predicate { !$0.isSystem && $0.name.lowercased() == lower }
-        )
-        let count = (try? modelContext.fetchCount(duplicate)) ?? 0
-        guard count == 0 else {
+        let allSquads = FetchDescriptor<Squad>(predicate: #Predicate { !$0.isSystem })
+        let existing = (try? modelContext.fetch(allSquads)) ?? []
+        guard !existing.contains(where: { $0.name.lowercased() == trimmed.lowercased() }) else {
             errorMessage = "A squad with this name already exists"
             return
         }
