@@ -172,6 +172,10 @@ struct SquadsView: View {
                         showFABMenu = false
                         vm.showNewSquadDialog = true
                     }
+                    FABMenuItem(icon: "arrow.down.circle", label: "Import Squad") {
+                        showFABMenu = false
+                        vm.showImportDialog = true
+                    }
                     FABMenuItem(icon: "gear", label: "Settings") {
                         showFABMenu = false
                         navigateToSettings = true
@@ -220,6 +224,27 @@ struct SquadsView: View {
                 .presentationDragIndicator(.visible)
             }
         }
+        .sheet(isPresented: Binding(
+            get: { vm.showImportDialog },
+            set: { if !$0 { vm.clearImportDialog() } }
+        )) {
+            ImportSquadSheet(viewModel: vm)
+                .presentationDetents([.height(320)])
+                .presentationDragIndicator(.visible)
+        }
+        .overlay(alignment: .bottom) {
+            if let name = vm.importedSquadName {
+                Text("\"\(name)\" imported successfully")
+                    .font(.subheadline)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                    .background(Color(.systemBackground).shadow(.drop(radius: 4)))
+                    .clipShape(Capsule())
+                    .padding(.bottom, 80)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
+        .animation(.easeInOut, value: vm.importedSquadName)
     }
 }
 
@@ -305,6 +330,75 @@ struct FavouriteCard: View {
                 Label("Remove from Favourites", systemImage: "star.slash")
             }
         }
+    }
+}
+
+struct ImportSquadSheet: View {
+    let viewModel: SquadsViewModel
+    @FocusState private var isCodeFocused: Bool
+
+    var body: some View {
+        VStack(spacing: 20) {
+            Text(viewModel.isImporting ? "Importing squad..." : "Import Squad")
+                .font(.headline)
+                .padding(.top, 8)
+
+            if viewModel.isImporting {
+                VStack(spacing: 12) {
+                    ProgressView()
+                    if let progress = viewModel.importProgress {
+                        Text(progress)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal)
+                    }
+                }
+                .frame(height: 80)
+            } else {
+                VStack(spacing: 8) {
+                    TextField("6-character code", text: Binding(
+                        get: { viewModel.importCode },
+                        set: { viewModel.importCode = $0.uppercased().prefix(6).description }
+                    ))
+                    .textInputAutocapitalization(.characters)
+                    .autocorrectionDisabled()
+                    .multilineTextAlignment(.center)
+                    .font(.system(size: 28, weight: .bold, design: .monospaced))
+                    .tracking(4)
+                    .focused($isCodeFocused)
+                    .padding()
+                    .background(Color(.systemGray6))
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                    .padding(.horizontal)
+
+                    if let error = viewModel.importError {
+                        Text(error)
+                            .font(.caption)
+                            .foregroundColor(.red)
+                            .padding(.horizontal)
+                    }
+                }
+            }
+
+            if !viewModel.isImporting {
+                Button {
+                    viewModel.importSquad()
+                } label: {
+                    Text("Import")
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(Color.accentColor)
+                        .foregroundColor(.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .padding(.horizontal)
+                }
+                .buttonStyle(.plain)
+                .disabled(viewModel.importCode.count != 6)
+            }
+        }
+        .padding(.bottom)
+        .onAppear { isCodeFocused = true }
     }
 }
 

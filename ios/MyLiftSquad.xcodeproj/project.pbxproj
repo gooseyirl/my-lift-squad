@@ -18,6 +18,7 @@
 		4A1836A3B73B144DFED363CE /* OplModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF75DD4387FC39FC137DC9E9 /* OplModels.swift */; };
 		57B154ADD7CFD90C1372BF5F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C7451EA7632DEF5C348F4B73 /* Assets.xcassets */; };
 		6F30414296D679F763016BD6 /* SlugScopeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B14D958742AC04239FE253C5 /* SlugScopeTests.swift */; };
+		7D36C98BCF0AA4B38C16696E /* ShareApiService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25983211F69386D91834418A /* ShareApiService.swift */; };
 		9623F033867556C10A46BA18 /* PrCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1D99F297E684DE7A14D8DC5 /* PrCalculator.swift */; };
 		9F6542F4DF89A7CFE91BA7A7 /* StoreKitManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 506E7633A5AF1BBF7DF6559E /* StoreKitManager.swift */; };
 		A1426F4FD2BF34BEFD0DF7D8 /* SettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 160D1CB055D2C58756287CFF /* SettingsViewModel.swift */; };
@@ -50,9 +51,10 @@
 		11059B45567F1694BAD1E61F /* OplApiService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OplApiService.swift; sourceTree = "<group>"; };
 		11A349A5D90667E9323BEA48 /* SquadDetailViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SquadDetailViewModel.swift; sourceTree = "<group>"; };
 		160D1CB055D2C58756287CFF /* SettingsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewModel.swift; sourceTree = "<group>"; };
+		25983211F69386D91834418A /* ShareApiService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareApiService.swift; sourceTree = "<group>"; };
 		32894700EF07689F737B5FA4 /* SearchAthleteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchAthleteView.swift; sourceTree = "<group>"; };
 		34D292DCC3BB668525EEC467 /* SBDText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SBDText.swift; sourceTree = "<group>"; };
-		42B68F5D442E40C614FAE4D5 /* MyLiftSquad.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MyLiftSquad.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		42B68F5D442E40C614FAE4D5 /* MyLiftSquad.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = MyLiftSquad.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		506E7633A5AF1BBF7DF6559E /* StoreKitManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreKitManager.swift; sourceTree = "<group>"; };
 		5968D96416CBBA2C1D3553A9 /* BackupModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackupModels.swift; sourceTree = "<group>"; };
 		62E37F3AA209CAC97785668E /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
@@ -149,6 +151,7 @@
 			children = (
 				11059B45567F1694BAD1E61F /* OplApiService.swift */,
 				AF75DD4387FC39FC137DC9E9 /* OplModels.swift */,
+				25983211F69386D91834418A /* ShareApiService.swift */,
 			);
 			path = API;
 			sourceTree = "<group>";
@@ -324,6 +327,7 @@
 				1C134E2AFBD1504F5A8205BE /* SearchViewModel.swift in Sources */,
 				F55A117E5E9E3070565BBFA1 /* SettingsView.swift in Sources */,
 				A1426F4FD2BF34BEFD0DF7D8 /* SettingsViewModel.swift in Sources */,
+				7D36C98BCF0AA4B38C16696E /* ShareApiService.swift in Sources */,
 				AB7B1F3C467ED786F8A3E78A /* Squad.swift in Sources */,
 				0AD14F0D7D636C26CB75FC01 /* SquadDetailView.swift in Sources */,
 				082EE242078FC9AD5989661B /* SquadDetailViewModel.swift in Sources */,
@@ -408,7 +412,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				INFOPLIST_FILE = MyLiftSquad/Resources/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 1.4.1;
+				MARKETING_VERSION = 2.0.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -461,7 +465,6 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "Apple Distribution";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 7;
 				INFOPLIST_FILE = MyLiftSquad/Resources/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -482,7 +485,6 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 7;
 				INFOPLIST_FILE = MyLiftSquad/Resources/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -545,7 +547,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				INFOPLIST_FILE = MyLiftSquad/Resources/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 1.4.1;
+				MARKETING_VERSION = 2.0.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = com.gooseco.myliftsquad;

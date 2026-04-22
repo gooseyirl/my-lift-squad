@@ -32,6 +32,24 @@ struct SearchAthleteView: View {
             }
             isSearchFocused = true
         }
+        .overlay(alignment: .bottom) {
+            if viewModel?.showSquadFullMessage == true {
+                Text("Squad is full (max 30 athletes)")
+                    .font(.subheadline)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                    .background(Color(.systemBackground).shadow(.drop(radius: 4)))
+                    .clipShape(Capsule())
+                    .padding(.bottom, 16)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .onAppear {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+                            withAnimation { viewModel?.showSquadFullMessage = false }
+                        }
+                    }
+            }
+        }
+        .animation(.easeInOut, value: viewModel?.showSquadFullMessage)
     }
 
     @ViewBuilder

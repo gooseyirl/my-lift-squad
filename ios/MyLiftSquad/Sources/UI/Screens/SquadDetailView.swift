@@ -19,14 +19,26 @@ struct SquadDetailView: View {
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button {
-                    Task { await viewModel?.refreshAll() }
-                } label: {
-                    if viewModel?.isRefreshing == true {
-                        ProgressView()
-                            .scaleEffect(0.8)
-                    } else {
-                        Image(systemName: "arrow.clockwise")
+                HStack(spacing: 16) {
+                    Button {
+                        viewModel?.shareSquad()
+                    } label: {
+                        if viewModel?.isShareLoading == true {
+                            ProgressView().scaleEffect(0.8)
+                        } else {
+                            Image(systemName: "square.and.arrow.up")
+                        }
+                    }
+                    .disabled(viewModel?.isShareLoading == true || viewModel?.athletes.isEmpty == true)
+
+                    Button {
+                        Task { await viewModel?.refreshAll() }
+                    } label: {
+                        if viewModel?.isRefreshing == true {
+                            ProgressView().scaleEffect(0.8)
+                        } else {
+                            Image(systemName: "arrow.clockwise")
+                        }
                     }
                 }
             }
@@ -122,6 +134,42 @@ struct SquadDetailView: View {
                 .presentationDragIndicator(.visible)
             }
         }
+        .sheet(isPresented: Binding(
+            get: { vm.shareCode != nil },
+            set: { if !$0 { vm.dismissShareCode() } }
+        )) {
+            ShareCodeSheet(code: vm.shareCode ?? "") {
+                vm.dismissShareCode()
+            }
+            .presentationDetents([.height(260)])
+            .presentationDragIndicator(.visible)
+        }
+        .alert("Share Failed", isPresented: Binding(
+            get: { vm.shareError != nil },
+            set: { if !$0 { vm.shareError = nil } }
+        )) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(vm.shareError ?? "")
+        }
+        .overlay(alignment: .bottom) {
+            if vm.showSquadFullMessage {
+                Text("Squad is full (max 30 athletes)")
+                    .font(.subheadline)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                    .background(Color(.systemBackground).shadow(.drop(radius: 4)))
+                    .clipShape(Capsule())
+                    .padding(.bottom, 80)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .onAppear {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+                            withAnimation { vm.showSquadFullMessage = false }
+                        }
+                    }
+            }
+        }
+        .animation(.easeInOut, value: vm.showSquadFullMessage)
         .overlay(alignment: .bottom) {
             if vm.showMaxFavsMessage {
                 Text("Maximum 3 favourites allowed")
@@ -140,6 +188,47 @@ struct SquadDetailView: View {
             }
         }
         .animation(.easeInOut, value: vm.showMaxFavsMessage)
+    }
+}
+
+struct ShareCodeSheet: View {
+    let code: String
+    let onDismiss: () -> Void
+    @State private var copied = false
+
+    var body: some View {
+        VStack(spacing: 24) {
+            Text("Share Code")
+                .font(.headline)
+                .padding(.top, 8)
+
+            Text(code)
+                .font(.system(size: 42, weight: .bold, design: .monospaced))
+                .tracking(6)
+                .foregroundColor(.accentColor)
+
+            Text("Share this code with others so they can import your squad. It expires in 30 days.")
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal)
+
+            Button {
+                UIPasteboard.general.string = code
+                copied = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2) { copied = false }
+            } label: {
+                Label(copied ? "Copied!" : "Copy Code", systemImage: copied ? "checkmark" : "doc.on.doc")
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .background(Color.accentColor)
+                    .foregroundColor(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .padding(.horizontal)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.bottom)
     }
 }
 

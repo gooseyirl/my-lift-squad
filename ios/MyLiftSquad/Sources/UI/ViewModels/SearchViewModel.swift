@@ -13,6 +13,7 @@ final class SearchViewModel {
     var showNoMoreResults = false
     var addedSlugs: Set<String> = []
     var errorMessage: String?
+    var showSquadFullMessage = false
 
     private var searchTask: Task<Void, Never>?
     private let modelContext: ModelContext
@@ -96,6 +97,10 @@ final class SearchViewModel {
 
     func addAthlete(_ oplAthlete: OplAthlete) {
         guard !addedSlugs.contains(oplAthlete.slug) else { return }
+        guard squad.athletes.count < 30 else {
+            showSquadFullMessage = true
+            return
+        }
 
         let athlete = Athlete(
             name: oplAthlete.name,

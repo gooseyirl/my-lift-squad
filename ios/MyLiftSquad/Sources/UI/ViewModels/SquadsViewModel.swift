@@ -12,6 +12,14 @@ final class SquadsViewModel {
     var showQuote = false
     var currentQuote = ""
 
+    // Import squad
+    var showImportDialog = false
+    var importCode = ""
+    var isImporting = false
+    var importProgress: String?
+    var importError: String?
+    var importedSquadName: String?
+
     // Favourite athlete detail sheet
     var selectedFavourite: Athlete?
     var favouriteHistory: [CompetitionResult] = []
@@ -63,6 +71,92 @@ final class SquadsViewModel {
         errorMessage = nil
         showNewSquadDialog = false
         loadData()
+    }
+
+    func importSquad() {
+        let code = importCode.trimmingCharacters(in: .whitespaces).uppercased()
+        guard code.count == 6 else {
+            importError = "Enter a 6-character code"
+            return
+        }
+        Task {
+            isImporting = true
+            importError = nil
+            importProgress = "Fetching squad..."
+            defer {
+                isImporting = false
+                importProgress = nil
+            }
+            do {
+                let shared = try await ShareApiService.shared.importSquad(code: code)
+
+                let allSquads = FetchDescriptor<Squad>(predicate: #Predicate { !$0.isSystem })
+                let existing = (try? modelContext.fetch(allSquads)) ?? []
+                guard !existing.contains(where: { $0.name.lowercased() == shared.name.lowercased() }) else {
+                    importError = "You already have a squad named \"\(shared.name)\""
+                    return
+                }
+
+                let squad = Squad(name: shared.name)
+                modelContext.insert(squad)
+                try? modelContext.save()
+
+                let total = shared.athletes.count
+                for (index, ref) in shared.athletes.enumerated() {
+                    importProgress = "Fetching data for \(ref.name) (\(index + 1) of \(total))..."
+                    let athlete = Athlete(name: ref.name, slug: ref.slug, country: "", federation: "")
+                    athlete.squad = squad
+                    modelContext.insert(athlete)
+                    try? modelContext.save()
+
+                    if let (results, _) = try? await OplApiService.shared.fetchHistory(slug: ref.slug),
+                       !results.isEmpty {
+                        let slug = ref.slug
+                        for result in results {
+                            modelContext.insert(CompetitionEntry(
+                                athleteSlug: slug, date: result.date, meetName: result.meetName,
+                                federation: result.federation, equipment: result.equipment,
+                                division: result.division, weightClassKg: result.weightClassKg,
+                                bodyweightKg: result.bodyweightKg, best3SquatKg: result.best3SquatKg,
+                                best3BenchKg: result.best3BenchKg, best3DeadliftKg: result.best3DeadliftKg,
+                                totalKg: result.totalKg, place: result.place, dots: result.dots,
+                                meetCountry: result.meetCountry, meetTown: result.meetTown
+                            ))
+                        }
+                        let prs = PrCalculator.calculate(from: results)
+                        athlete.bestSquatKg = prs.bestSquat
+                        athlete.bestBenchKg = prs.bestBench
+                        athlete.bestDeadliftKg = prs.bestDeadlift
+                        athlete.bestTotalKg = prs.bestTotal
+                        if let latest = results.first {
+                            if !latest.federation.isEmpty { athlete.federation = latest.federation }
+                            if !latest.weightClassKg.isEmpty { athlete.weightClass = latest.weightClassKg }
+                            if !latest.equipment.isEmpty { athlete.equipment = latest.equipment }
+                            athlete.lastCompDate = latest.date
+                        }
+                        try? modelContext.save()
+                    }
+                }
+
+                let squadName = shared.name
+                showImportDialog = false
+                importCode = ""
+                loadData()
+                importedSquadName = squadName
+                Task {
+                    try? await Task.sleep(nanoseconds: 3_000_000_000)
+                    importedSquadName = nil
+                }
+            } catch {
+                importError = error.localizedDescription
+            }
+        }
+    }
+
+    func clearImportDialog() {
+        showImportDialog = false
+        importCode = ""
+        importError = nil
     }
 
     func deleteSquad(_ squad: Squad) {

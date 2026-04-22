@@ -17,6 +17,14 @@ final class SquadDetailViewModel {
     // Max favourites snackbar
     var showMaxFavsMessage = false
 
+    // Squad full toast
+    var showSquadFullMessage = false
+
+    // Share
+    var shareCode: String?
+    var isShareLoading = false
+    var shareError: String?
+
     private var squad: Squad
     private let modelContext: ModelContext
 
@@ -160,5 +168,26 @@ final class SquadDetailViewModel {
         modelContext.delete(athlete)
         try? modelContext.save()
         loadAthletes()
+    }
+
+    func shareSquad() {
+        let currentAthletes = athletes
+        guard !currentAthletes.isEmpty else { return }
+        Task {
+            isShareLoading = true
+            shareError = nil
+            defer { isShareLoading = false }
+            do {
+                let refs = currentAthletes.map { AthleteRef(name: $0.name, slug: $0.slug) }
+                shareCode = try await ShareApiService.shared.shareSquad(name: squad.name, athletes: refs)
+            } catch {
+                shareError = error.localizedDescription
+            }
+        }
+    }
+
+    func dismissShareCode() {
+        shareCode = nil
+        shareError = nil
     }
 }
