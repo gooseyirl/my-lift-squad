@@ -28,6 +28,9 @@ interface SquadDao {
     @Query("SELECT * FROM squads WHERE isSystem = 0 ORDER BY name ASC")
     suspend fun getAllSquadsList(): List<Squad>
 
+    @Query("SELECT COUNT(*) FROM squads WHERE LOWER(name) = LOWER(:name) AND isSystem = 0")
+    suspend fun countByName(name: String): Int
+
     @Query("SELECT * FROM squads WHERE isSystem = 1 LIMIT 1")
     suspend fun getSystemSquad(): Squad?
 

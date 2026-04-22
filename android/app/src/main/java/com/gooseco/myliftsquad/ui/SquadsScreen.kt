@@ -52,6 +52,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -98,10 +99,17 @@ fun SquadsScreen(
 
     val squads by viewModel.squads.collectAsState()
     val favourites by viewModel.favourites.collectAsState()
+    val nameError by viewModel.nameError.collectAsState()
     var showCreateDialog by remember { mutableStateOf(false) }
     var squadToDelete by remember { mutableStateOf<SquadWithCount?>(null) }
     var athleteToUnfavourite by remember { mutableStateOf<Athlete?>(null) }
     var fabExpanded by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        viewModel.squadCreated.collect {
+            showCreateDialog = false
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
 
@@ -332,11 +340,12 @@ fun SquadsScreen(
 
     if (showCreateDialog) {
         CreateSquadDialog(
-            onConfirm = { name ->
-                viewModel.createSquad(name)
+            errorMessage = nameError,
+            onConfirm = { name -> viewModel.createSquad(name) },
+            onDismiss = {
                 showCreateDialog = false
-            },
-            onDismiss = { showCreateDialog = false }
+                viewModel.clearNameError()
+            }
         )
     }
 
@@ -564,7 +573,8 @@ private fun SquadCard(
 @Composable
 private fun CreateSquadDialog(
     onConfirm: (String) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    errorMessage: String? = null
 ) {
     var name by remember { mutableStateOf("") }
 
@@ -577,6 +587,8 @@ private fun CreateSquadDialog(
                 onValueChange = { name = it },
                 label = { Text("Squad name") },
                 singleLine = true,
+                isError = errorMessage != null,
+                supportingText = errorMessage?.let { msg -> { Text(msg) } },
                 modifier = Modifier.fillMaxWidth()
             )
         },

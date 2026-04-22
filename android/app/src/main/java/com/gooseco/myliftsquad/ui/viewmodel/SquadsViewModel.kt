@@ -8,8 +8,13 @@ import com.gooseco.myliftsquad.data.db.Athlete
 import com.gooseco.myliftsquad.data.db.AthleteWithSquad
 import com.gooseco.myliftsquad.data.db.Squad
 import com.gooseco.myliftsquad.data.db.SquadWithCount
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -33,12 +38,28 @@ class SquadsViewModel(app: Application) : AndroidViewModel(app) {
             initialValue = emptyList()
         )
 
+    private val _nameError = MutableStateFlow<String?>(null)
+    val nameError: StateFlow<String?> = _nameError.asStateFlow()
+
+    private val _squadCreated = MutableSharedFlow<Unit>(replay = 0)
+    val squadCreated: SharedFlow<Unit> = _squadCreated.asSharedFlow()
+
     fun createSquad(name: String) {
         val trimmed = name.trim()
         if (trimmed.isEmpty()) return
         viewModelScope.launch {
-            squadDao.insert(Squad(name = trimmed))
+            if (squadDao.countByName(trimmed) > 0) {
+                _nameError.value = "A squad with this name already exists"
+            } else {
+                squadDao.insert(Squad(name = trimmed))
+                _nameError.value = null
+                _squadCreated.emit(Unit)
+            }
         }
+    }
+
+    fun clearNameError() {
+        _nameError.value = null
     }
 
     fun unfavourite(athlete: Athlete) {
