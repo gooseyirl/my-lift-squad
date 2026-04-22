@@ -19,9 +19,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Badge
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -50,6 +52,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -84,6 +88,11 @@ fun SquadDetailScreen(
     val historyError by viewModel.historyError.collectAsState()
     val maxFavouritesReached by viewModel.maxFavouritesReached.collectAsState()
     val favouriteCount by viewModel.favouriteCount.collectAsState()
+    val shareCode by viewModel.shareCode.collectAsState()
+    val shareLoading by viewModel.shareLoading.collectAsState()
+    val shareError by viewModel.shareError.collectAsState()
+
+    val clipboardManager = LocalClipboardManager.current
 
     var athleteOptions by remember { mutableStateOf<Athlete?>(null) }
     var athleteToDelete by remember { mutableStateOf<Athlete?>(null) }
@@ -127,6 +136,23 @@ fun SquadDetailScreen(
                             color = MaterialTheme.colorScheme.onPrimary
                         )
                     } else if (athletes.isNotEmpty()) {
+                        if (shareLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier
+                                    .size(20.dp)
+                                    .padding(end = 4.dp),
+                                strokeWidth = 2.dp,
+                                color = MaterialTheme.colorScheme.onPrimary
+                            )
+                        } else {
+                            IconButton(onClick = { viewModel.shareSquad() }) {
+                                Icon(
+                                    imageVector = Icons.Default.Share,
+                                    contentDescription = "Share squad",
+                                    tint = MaterialTheme.colorScheme.onPrimary
+                                )
+                            }
+                        }
                         IconButton(onClick = { viewModel.refreshAllAthletes() }) {
                             Icon(
                                 imageVector = Icons.Default.Refresh,
@@ -223,6 +249,58 @@ fun SquadDetailScreen(
                 TextButton(onClick = { athleteToDelete = null }) {
                     Text("Cancel")
                 }
+            }
+        )
+    }
+
+    // Share code dialog
+    shareCode?.let { code ->
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissShareCode() },
+            title = { Text("Share code") },
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = code,
+                        style = MaterialTheme.typography.displaySmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text = "Share this code with anyone to let them import your squad. It expires in 30 days.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    clipboardManager.setText(AnnotatedString(code))
+                    viewModel.dismissShareCode()
+                }) {
+                    Text("Copy code")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.dismissShareCode() }) {
+                    Text("Close")
+                }
+            }
+        )
+    }
+
+    // Share error dialog
+    shareError?.let { msg ->
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissShareCode() },
+            title = { Text("Could not share squad") },
+            text = { Text(msg) },
+            confirmButton = {
+                TextButton(onClick = { viewModel.dismissShareCode() }) { Text("OK") }
             }
         )
     }

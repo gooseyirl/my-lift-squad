@@ -5,8 +5,10 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.gooseco.myliftsquad.MyLiftSquadApp
 import com.gooseco.myliftsquad.data.PrCalculator
+import com.gooseco.myliftsquad.data.api.AthleteRef
 import com.gooseco.myliftsquad.data.api.OplAthlete
 import com.gooseco.myliftsquad.data.api.OplApiService
+import com.gooseco.myliftsquad.data.api.ShareApiService
 import com.gooseco.myliftsquad.data.db.Athlete
 import com.gooseco.myliftsquad.data.db.CompetitionEntry
 import com.gooseco.myliftsquad.data.db.Squad
@@ -27,6 +29,16 @@ class SquadDetailViewModel(app: Application) : AndroidViewModel(app) {
     private val athleteDao = db.athleteDao()
     private val competitionEntryDao = db.competitionEntryDao()
     private val apiService = OplApiService()
+    private val shareApiService = ShareApiService()
+
+    private val _shareCode = MutableStateFlow<String?>(null)
+    val shareCode: StateFlow<String?> = _shareCode
+
+    private val _shareLoading = MutableStateFlow(false)
+    val shareLoading: StateFlow<Boolean> = _shareLoading
+
+    private val _shareError = MutableStateFlow<String?>(null)
+    val shareError: StateFlow<String?> = _shareError
 
     private val squadIdFlow = MutableStateFlow<Int>(-1)
     private val viewingAthleteSlug = MutableStateFlow<String?>(null)
@@ -222,6 +234,29 @@ class SquadDetailViewModel(app: Application) : AndroidViewModel(app) {
 
     fun dismissMaxFavouritesMessage() {
         _maxFavouritesReached.value = false
+    }
+
+    fun shareSquad() {
+        val currentSquad = squad.value ?: return
+        val currentAthletes = athletes.value
+        if (currentAthletes.isEmpty()) return
+        viewModelScope.launch {
+            _shareLoading.value = true
+            _shareError.value = null
+            try {
+                val refs = currentAthletes.map { AthleteRef(name = it.name, slug = it.slug) }
+                _shareCode.value = shareApiService.shareSquad(currentSquad.name, refs)
+            } catch (e: Exception) {
+                _shareError.value = e.message ?: "Failed to generate share code."
+            } finally {
+                _shareLoading.value = false
+            }
+        }
+    }
+
+    fun dismissShareCode() {
+        _shareCode.value = null
+        _shareError.value = null
     }
 
     fun deleteAthlete(athlete: Athlete) {

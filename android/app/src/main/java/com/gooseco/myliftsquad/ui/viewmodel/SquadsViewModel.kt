@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.gooseco.myliftsquad.MyLiftSquadApp
+import com.gooseco.myliftsquad.data.api.ShareApiService
 import com.gooseco.myliftsquad.data.db.Athlete
 import com.gooseco.myliftsquad.data.db.AthleteWithSquad
 import com.gooseco.myliftsquad.data.db.Squad
@@ -23,6 +24,16 @@ class SquadsViewModel(app: Application) : AndroidViewModel(app) {
     private val db = (app as MyLiftSquadApp).database
     private val squadDao = db.squadDao()
     private val athleteDao = db.athleteDao()
+    private val shareApiService = ShareApiService()
+
+    private val _importLoading = MutableStateFlow(false)
+    val importLoading: StateFlow<Boolean> = _importLoading.asStateFlow()
+
+    private val _importError = MutableStateFlow<String?>(null)
+    val importError: StateFlow<String?> = _importError.asStateFlow()
+
+    private val _importedSquadName = MutableSharedFlow<String>(replay = 0)
+    val importedSquadName: SharedFlow<String> = _importedSquadName.asSharedFlow()
 
     val squads: StateFlow<List<SquadWithCount>> = squadDao.getAllSquadsWithCount()
         .stateIn(
@@ -60,6 +71,51 @@ class SquadsViewModel(app: Application) : AndroidViewModel(app) {
 
     fun clearNameError() {
         _nameError.value = null
+    }
+
+    fun importSquad(code: String) {
+        val trimmed = code.trim().uppercase()
+        if (trimmed.length != 6) {
+            _importError.value = "Enter a 6-character code"
+            return
+        }
+        viewModelScope.launch {
+            _importLoading.value = true
+            _importError.value = null
+            try {
+                val shared = shareApiService.importSquad(trimmed)
+                val squad = Squad(name = shared.name)
+                val squadId = squadDao.insert(squad).toInt()
+                shared.athletes.forEach { ref ->
+                    athleteDao.insert(
+                        Athlete(
+                            squadId = squadId,
+                            name = ref.name,
+                            slug = ref.slug,
+                            country = null,
+                            federation = null,
+                            bestSquat = null,
+                            bestBench = null,
+                            bestDeadlift = null,
+                            bestTotal = null,
+                            weightClass = null,
+                            equipment = null,
+                            lastCompDate = null,
+                            gender = null
+                        )
+                    )
+                }
+                _importedSquadName.emit(shared.name)
+            } catch (e: Exception) {
+                _importError.value = e.message ?: "Failed to import squad."
+            } finally {
+                _importLoading.value = false
+            }
+        }
+    }
+
+    fun clearImportError() {
+        _importError.value = null
     }
 
     fun unfavourite(athlete: Athlete) {

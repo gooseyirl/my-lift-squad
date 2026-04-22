@@ -29,12 +29,16 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Badge
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -99,8 +103,12 @@ fun SquadsScreen(
 
     val squads by viewModel.squads.collectAsState()
     val favourites by viewModel.favourites.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
     val nameError by viewModel.nameError.collectAsState()
+    val importLoading by viewModel.importLoading.collectAsState()
+    val importError by viewModel.importError.collectAsState()
     var showCreateDialog by remember { mutableStateOf(false) }
+    var showImportDialog by remember { mutableStateOf(false) }
     var squadToDelete by remember { mutableStateOf<SquadWithCount?>(null) }
     var athleteToUnfavourite by remember { mutableStateOf<Athlete?>(null) }
     var fabExpanded by remember { mutableStateOf(false) }
@@ -111,9 +119,17 @@ fun SquadsScreen(
         }
     }
 
+    LaunchedEffect(Unit) {
+        viewModel.importedSquadName.collect { name ->
+            showImportDialog = false
+            snackbarHostState.showSnackbar("\"$name\" imported successfully")
+        }
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
 
         Scaffold(
+            snackbarHost = { SnackbarHost(snackbarHostState) },
             topBar = {
                 TopAppBar(
                     title = {
@@ -293,6 +309,20 @@ fun SquadsScreen(
                         showCreateDialog = true
                     }
                     SpeedDialItem(
+                        label = "Import Squad",
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Filled.Download,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(14.dp)
+                            )
+                        }
+                    ) {
+                        fabExpanded = false
+                        showImportDialog = true
+                    }
+                    SpeedDialItem(
                         label = "Settings",
                         leadingIcon = {
                             Icon(
@@ -345,6 +375,18 @@ fun SquadsScreen(
             onDismiss = {
                 showCreateDialog = false
                 viewModel.clearNameError()
+            }
+        )
+    }
+
+    if (showImportDialog) {
+        ImportSquadDialog(
+            loading = importLoading,
+            errorMessage = importError,
+            onConfirm = { code -> viewModel.importSquad(code) },
+            onDismiss = {
+                showImportDialog = false
+                viewModel.clearImportError()
             }
         )
     }
@@ -602,6 +644,51 @@ private fun CreateSquadDialog(
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
+@Composable
+private fun ImportSquadDialog(
+    loading: Boolean,
+    errorMessage: String? = null,
+    onConfirm: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var code by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = { if (!loading) onDismiss() },
+        title = { Text("Import squad") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedTextField(
+                    value = code,
+                    onValueChange = { code = it.uppercase().take(6) },
+                    label = { Text("Share code") },
+                    placeholder = { Text("e.g. AB3X7K") },
+                    singleLine = true,
+                    isError = errorMessage != null,
+                    supportingText = errorMessage?.let { msg -> { Text(msg) } },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                if (loading) {
+                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { if (code.length == 6) onConfirm(code) },
+                enabled = code.length == 6 && !loading
+            ) {
+                Text("Import")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss, enabled = !loading) {
                 Text("Cancel")
             }
         }
