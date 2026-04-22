@@ -14,6 +14,8 @@ import com.gooseco.myliftsquad.data.db.CompetitionEntry
 import com.gooseco.myliftsquad.data.db.Squad
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -21,6 +23,28 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+
+enum class AthleteSortOption(val label: String) {
+    TOTAL_DESC("Total ↓"),
+    TOTAL_ASC("Total ↑"),
+    SQUAT_DESC("Squat ↓"),
+    SQUAT_ASC("Squat ↑"),
+    BENCH_DESC("Bench ↓"),
+    BENCH_ASC("Bench ↑"),
+    DEADLIFT_DESC("Deadlift ↓"),
+    DEADLIFT_ASC("Deadlift ↑"),
+}
+
+private fun List<Athlete>.sortedBy(option: AthleteSortOption): List<Athlete> = when (option) {
+    AthleteSortOption.TOTAL_DESC    -> sortedByDescending { it.bestTotal ?: -1.0 }
+    AthleteSortOption.TOTAL_ASC     -> sortedBy { it.bestTotal ?: Double.MAX_VALUE }
+    AthleteSortOption.SQUAT_DESC    -> sortedByDescending { it.bestSquat ?: -1.0 }
+    AthleteSortOption.SQUAT_ASC     -> sortedBy { it.bestSquat ?: Double.MAX_VALUE }
+    AthleteSortOption.BENCH_DESC    -> sortedByDescending { it.bestBench ?: -1.0 }
+    AthleteSortOption.BENCH_ASC     -> sortedBy { it.bestBench ?: Double.MAX_VALUE }
+    AthleteSortOption.DEADLIFT_DESC -> sortedByDescending { it.bestDeadlift ?: -1.0 }
+    AthleteSortOption.DEADLIFT_ASC  -> sortedBy { it.bestDeadlift ?: Double.MAX_VALUE }
+}
 
 class SquadDetailViewModel(app: Application) : AndroidViewModel(app) {
 
@@ -54,17 +78,26 @@ class SquadDetailViewModel(app: Application) : AndroidViewModel(app) {
             initialValue = null
         )
 
+    private val _sortOption = MutableStateFlow(AthleteSortOption.TOTAL_DESC)
+    val sortOption: StateFlow<AthleteSortOption> = _sortOption.asStateFlow()
+
     @OptIn(ExperimentalCoroutinesApi::class)
-    val athletes: StateFlow<List<Athlete>> = squadIdFlow
-        .flatMapLatest { id ->
+    val athletes: StateFlow<List<Athlete>> = combine(
+        squadIdFlow.flatMapLatest { id ->
             if (id >= 0) athleteDao.getAthletesForSquad(id)
             else flow { emit(emptyList()) }
-        }
+        },
+        _sortOption
+    ) { list, sort -> list.sortedBy(sort) }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
             initialValue = emptyList()
         )
+
+    fun setSortOption(option: AthleteSortOption) {
+        _sortOption.value = option
+    }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val competitionHistory: StateFlow<List<CompetitionEntry>> = viewingAthleteSlug

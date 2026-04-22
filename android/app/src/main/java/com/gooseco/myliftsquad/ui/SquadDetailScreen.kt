@@ -20,9 +20,12 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Badge
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -63,6 +66,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.gooseco.myliftsquad.data.db.Athlete
 import com.gooseco.myliftsquad.data.db.CompetitionEntry
+import com.gooseco.myliftsquad.ui.viewmodel.AthleteSortOption
 import com.gooseco.myliftsquad.ui.viewmodel.SquadDetailViewModel
 
 private fun formatKg(value: Double): String =
@@ -92,12 +96,14 @@ fun SquadDetailScreen(
     val shareCode by viewModel.shareCode.collectAsState()
     val shareLoading by viewModel.shareLoading.collectAsState()
     val shareError by viewModel.shareError.collectAsState()
+    val sortOption by viewModel.sortOption.collectAsState()
 
     val clipboardManager = LocalClipboardManager.current
 
     var athleteOptions by remember { mutableStateOf<Athlete?>(null) }
     var athleteToDelete by remember { mutableStateOf<Athlete?>(null) }
     var selectedAthlete by remember { mutableStateOf<Athlete?>(null) }
+    var showSortMenu by remember { mutableStateOf(false) }
 
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
     val snackbarHostState = remember { SnackbarHostState() }
@@ -135,6 +141,38 @@ fun SquadDetailScreen(
                     }
                 },
                 actions = {
+                    if (athletes.isNotEmpty()) {
+                        Box {
+                            IconButton(onClick = { showSortMenu = true }) {
+                                Icon(
+                                    imageVector = Icons.Default.Sort,
+                                    contentDescription = "Sort athletes",
+                                    tint = MaterialTheme.colorScheme.onPrimary
+                                )
+                            }
+                            DropdownMenu(
+                                expanded = showSortMenu,
+                                onDismissRequest = { showSortMenu = false }
+                            ) {
+                                AthleteSortOption.entries.forEach { option ->
+                                    DropdownMenuItem(
+                                        text = {
+                                            Text(
+                                                text = option.label,
+                                                fontWeight = if (option == sortOption) FontWeight.Bold else FontWeight.Normal,
+                                                color = if (option == sortOption) MaterialTheme.colorScheme.primary
+                                                        else MaterialTheme.colorScheme.onSurface
+                                            )
+                                        },
+                                        onClick = {
+                                            viewModel.setSortOption(option)
+                                            showSortMenu = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
                     if (refreshingAll) {
                         CircularProgressIndicator(
                             modifier = Modifier

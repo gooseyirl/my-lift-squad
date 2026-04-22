@@ -34,6 +34,9 @@ interface SquadDao {
     @Query("SELECT * FROM squads WHERE isSystem = 1 LIMIT 1")
     suspend fun getSystemSquad(): Squad?
 
+    @Query("UPDATE squads SET name = :name WHERE id = :id")
+    suspend fun rename(id: Int, name: String)
+
     @Query("DELETE FROM squads")
     suspend fun deleteAll()
 

@@ -193,7 +193,6 @@ fun SearchAthleteScreen(
                                 onClick = {
                                     if (!alreadyAdded) {
                                         squadDetailViewModel.addAthlete(athlete)
-                                        onBack()
                                     }
                                 }
                             )

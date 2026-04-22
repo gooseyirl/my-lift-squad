@@ -36,6 +36,8 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Badge
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -44,6 +46,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -105,18 +108,27 @@ fun SquadsScreen(
     val favourites by viewModel.favourites.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val nameError by viewModel.nameError.collectAsState()
+    val renameError by viewModel.renameError.collectAsState()
     val importLoading by viewModel.importLoading.collectAsState()
     val importProgress by viewModel.importProgress.collectAsState()
     val importError by viewModel.importError.collectAsState()
     var showCreateDialog by remember { mutableStateOf(false) }
     var showImportDialog by remember { mutableStateOf(false) }
     var squadToDelete by remember { mutableStateOf<SquadWithCount?>(null) }
+    var squadToRename by remember { mutableStateOf<SquadWithCount?>(null) }
+    var squadOptions by remember { mutableStateOf<SquadWithCount?>(null) }
     var athleteToUnfavourite by remember { mutableStateOf<Athlete?>(null) }
     var fabExpanded by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.squadCreated.collect {
             showCreateDialog = false
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.renameSuccess.collect {
+            squadToRename = null
         }
     }
 
@@ -227,7 +239,7 @@ fun SquadsScreen(
                         SquadCard(
                             squad = squad,
                             onClick = { onSquadClick(squad.id) },
-                            onLongPress = { squadToDelete = squad }
+                            onLongPress = { squadOptions = squad }
                         )
                     }
                 }
@@ -393,6 +405,48 @@ fun SquadsScreen(
         )
     }
 
+    squadOptions?.let { squad ->
+        AlertDialog(
+            onDismissRequest = { squadOptions = null },
+            title = { Text(squad.name) },
+            text = {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    TextButton(
+                        onClick = {
+                            squadOptions = null
+                            squadToRename = squad
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = "Rename",
+                            modifier = Modifier.fillMaxWidth(),
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                    TextButton(
+                        onClick = {
+                            squadOptions = null
+                            squadToDelete = squad
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = "Delete",
+                            modifier = Modifier.fillMaxWidth(),
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { squadOptions = null }) { Text("Cancel") }
+            }
+        )
+    }
+
     squadToDelete?.let { squad ->
         AlertDialog(
             onDismissRequest = { squadToDelete = null },
@@ -410,6 +464,18 @@ fun SquadsScreen(
                 TextButton(onClick = { squadToDelete = null }) {
                     Text("Cancel")
                 }
+            }
+        )
+    }
+
+    squadToRename?.let { squad ->
+        RenameSquadDialog(
+            currentName = squad.name,
+            errorMessage = renameError,
+            onConfirm = { newName -> viewModel.renameSquad(squad.id, newName) },
+            onDismiss = {
+                squadToRename = null
+                viewModel.clearRenameError()
             }
         )
     }
@@ -612,6 +678,43 @@ private fun SquadCard(
             }
         }
     }
+}
+
+@Composable
+private fun RenameSquadDialog(
+    currentName: String,
+    onConfirm: (String) -> Unit,
+    onDismiss: () -> Unit,
+    errorMessage: String? = null
+) {
+    var name by remember { mutableStateOf(currentName) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Rename squad") },
+        text = {
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = { Text("Squad name") },
+                singleLine = true,
+                isError = errorMessage != null,
+                supportingText = errorMessage?.let { msg -> { Text(msg) } },
+                modifier = Modifier.fillMaxWidth()
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { if (name.isNotBlank()) onConfirm(name) },
+                enabled = name.isNotBlank()
+            ) {
+                Text("Rename")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        }
+    )
 }
 
 @Composable

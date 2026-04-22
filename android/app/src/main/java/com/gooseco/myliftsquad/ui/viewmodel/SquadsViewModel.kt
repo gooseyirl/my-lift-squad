@@ -60,6 +60,12 @@ class SquadsViewModel(app: Application) : AndroidViewModel(app) {
     private val _nameError = MutableStateFlow<String?>(null)
     val nameError: StateFlow<String?> = _nameError.asStateFlow()
 
+    private val _renameError = MutableStateFlow<String?>(null)
+    val renameError: StateFlow<String?> = _renameError.asStateFlow()
+
+    private val _renameSuccess = MutableSharedFlow<Unit>(replay = 0)
+    val renameSuccess: SharedFlow<Unit> = _renameSuccess.asSharedFlow()
+
     private val _squadCreated = MutableSharedFlow<Unit>(replay = 0)
     val squadCreated: SharedFlow<Unit> = _squadCreated.asSharedFlow()
 
@@ -79,6 +85,24 @@ class SquadsViewModel(app: Application) : AndroidViewModel(app) {
 
     fun clearNameError() {
         _nameError.value = null
+    }
+
+    fun renameSquad(squadId: Int, newName: String) {
+        val trimmed = newName.trim()
+        if (trimmed.isEmpty()) return
+        viewModelScope.launch {
+            if (squadDao.countByName(trimmed) > 0) {
+                _renameError.value = "A squad with this name already exists"
+            } else {
+                squadDao.rename(squadId, trimmed)
+                _renameError.value = null
+                _renameSuccess.emit(Unit)
+            }
+        }
+    }
+
+    fun clearRenameError() {
+        _renameError.value = null
     }
 
     fun importSquad(code: String) {
