@@ -280,7 +280,7 @@ struct EmptySquadsView: View {
 
                 VStack(alignment: .leading, spacing: 14) {
                     EmptyStateFeatureRow(icon: "trophy.fill",            text: "Track personal records for squat, bench and deadlift")
-                    EmptyStateFeatureRow(icon: "calendar",               text: "Browse full competition history via OpenPowerlifting")
+                    EmptyStateFeatureRow(icon: "calendar",               text: "Browse full competition history")
                     EmptyStateFeatureRow(icon: "square.and.arrow.up",    text: "Share squads with friends using a 6-character code")
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)

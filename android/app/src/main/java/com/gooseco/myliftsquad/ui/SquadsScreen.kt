@@ -748,7 +748,7 @@ private fun EmptySquadsContent(
         Spacer(Modifier.height(32.dp))
         EmptyStateFeatureRow(icon = Icons.Filled.Star,    text = "Track personal records for squat, bench and deadlift")
         Spacer(Modifier.height(16.dp))
-        EmptyStateFeatureRow(icon = Icons.Filled.DateRange, text = "Browse full competition history via OpenPowerlifting")
+        EmptyStateFeatureRow(icon = Icons.Filled.DateRange, text = "Browse full competition history")
         Spacer(Modifier.height(16.dp))
         EmptyStateFeatureRow(icon = Icons.Filled.Share,   text = "Share squads with friends using a 6-character code")
         Spacer(Modifier.height(40.dp))
