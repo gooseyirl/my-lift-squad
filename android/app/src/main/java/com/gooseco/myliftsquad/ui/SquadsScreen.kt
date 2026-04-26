@@ -29,10 +29,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Badge
@@ -69,10 +71,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -177,19 +181,12 @@ fun SquadsScreen(
             }
         ) { innerPadding ->
             if (squads.isEmpty() && favourites.isEmpty()) {
-                Box(
+                EmptySquadsContent(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(innerPadding),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "No squads yet. Tap + to create your first squad.",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(32.dp)
-                    )
-                }
+                    onCreateSquad = { showCreateDialog = true }
+                )
             } else {
                 LazyColumn(
                     modifier = Modifier
@@ -715,6 +712,74 @@ private fun RenameSquadDialog(
             TextButton(onClick = onDismiss) { Text("Cancel") }
         }
     )
+}
+
+@Composable
+private fun EmptySquadsContent(
+    modifier: Modifier = Modifier,
+    onCreateSquad: () -> Unit
+) {
+    Column(
+        modifier = modifier.padding(horizontal = 32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Image(
+            painter = painterResource(id = R.drawable.app_icon),
+            contentDescription = null,
+            modifier = Modifier
+                .size(80.dp)
+                .clip(RoundedCornerShape(20.dp))
+        )
+        Spacer(Modifier.height(24.dp))
+        Text(
+            text = "Track Your Powerlifting Squad",
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Center
+        )
+        Spacer(Modifier.height(8.dp))
+        Text(
+            text = "Follow athletes, monitor PRs, and keep up with competition results — all in one place.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
+        )
+        Spacer(Modifier.height(32.dp))
+        EmptyStateFeatureRow(icon = Icons.Filled.Star,    text = "Track personal records for squat, bench and deadlift")
+        Spacer(Modifier.height(16.dp))
+        EmptyStateFeatureRow(icon = Icons.Filled.DateRange, text = "Browse full competition history via OpenPowerlifting")
+        Spacer(Modifier.height(16.dp))
+        EmptyStateFeatureRow(icon = Icons.Filled.Share,   text = "Share squads with friends using a 6-character code")
+        Spacer(Modifier.height(40.dp))
+        androidx.compose.material3.Button(
+            onClick = onCreateSquad,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Create Your First Squad")
+        }
+    }
+}
+
+@Composable
+private fun EmptyStateFeatureRow(icon: ImageVector, text: String) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(20.dp)
+        )
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
 }
 
 @Composable

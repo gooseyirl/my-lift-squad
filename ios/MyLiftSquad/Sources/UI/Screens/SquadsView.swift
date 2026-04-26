@@ -128,21 +128,10 @@ struct SquadsView: View {
 
                     // Squads List
                     if vm.squads.isEmpty {
-                        VStack(spacing: 16) {
-                            Spacer(minLength: 60)
-                            Image(systemName: "person.3")
-                                .font(.system(size: 60))
-                                .foregroundColor(.secondary)
-                            Text("No squads yet")
-                                .font(.title3)
-                                .foregroundColor(.secondary)
-                            Text("Tap + to create your first squad")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                            Spacer(minLength: 60)
+                        EmptySquadsView {
+                            showFABMenu = false
+                            vm.showNewSquadDialog = true
                         }
-                        .frame(maxWidth: .infinity)
-                        .padding()
                     } else {
                         ForEach(vm.squads) { squad in
                             SquadRowView(squad: squad) {
@@ -262,6 +251,71 @@ struct SquadsView: View {
             }
         }
         .animation(.easeInOut, value: vm.importedSquadName)
+    }
+}
+
+struct EmptySquadsView: View {
+    let onCreateSquad: () -> Void
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Spacer(minLength: 40)
+            VStack(spacing: 20) {
+                Image("app_icon")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 80, height: 80)
+                    .clipShape(RoundedRectangle(cornerRadius: 18))
+
+                VStack(spacing: 8) {
+                    Text("Track Your Powerlifting Squad")
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .multilineTextAlignment(.center)
+                    Text("Follow athletes, monitor PRs, and keep up with competition results — all in one place.")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+
+                VStack(alignment: .leading, spacing: 14) {
+                    EmptyStateFeatureRow(icon: "trophy.fill",            text: "Track personal records for squat, bench and deadlift")
+                    EmptyStateFeatureRow(icon: "calendar",               text: "Browse full competition history via OpenPowerlifting")
+                    EmptyStateFeatureRow(icon: "square.and.arrow.up",    text: "Share squads with friends using a 6-character code")
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                Button(action: onCreateSquad) {
+                    Text("Create Your First Squad")
+                        .fontWeight(.semibold)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                        .background(Color.accentColor)
+                        .foregroundColor(.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, 32)
+            Spacer(minLength: 40)
+        }
+        .frame(maxWidth: .infinity)
+    }
+}
+
+private struct EmptyStateFeatureRow: View {
+    let icon: String
+    let text: String
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .foregroundColor(.accentColor)
+                .frame(width: 20)
+            Text(text)
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+        }
     }
 }
 
