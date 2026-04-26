@@ -276,19 +276,19 @@ struct EmptySquadsView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 18))
 
                 VStack(spacing: 8) {
-                    Text("Track Your Powerlifting Squad")
+                    Text("Keep Up With Your Gym Crew")
                         .font(.title2)
                         .fontWeight(.bold)
                         .multilineTextAlignment(.center)
-                    Text("Follow athletes, monitor PRs, and keep up with competition results — all in one place.")
+                    Text("Build squads to follow your training partners and friends — track their PRs and competition results in one place.")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
                 }
 
                 VStack(alignment: .leading, spacing: 14) {
-                    EmptyStateFeatureRow(icon: "trophy.fill",            text: "Track personal records for squat, bench and deadlift")
-                    EmptyStateFeatureRow(icon: "calendar",               text: "Browse full competition history")
+                    EmptyStateFeatureRow(icon: "trophy.fill",            text: "See your training partners' squat, bench and deadlift PRs")
+                    EmptyStateFeatureRow(icon: "calendar",               text: "Browse their full competition history")
                     EmptyStateFeatureRow(icon: "square.and.arrow.up",    text: "Share squads with friends using a 6-character code")
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)

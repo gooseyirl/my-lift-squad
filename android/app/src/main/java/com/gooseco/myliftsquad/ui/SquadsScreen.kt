@@ -735,22 +735,22 @@ private fun EmptySquadsContent(
         )
         Spacer(Modifier.height(24.dp))
         Text(
-            text = "Track Your Powerlifting Squad",
+            text = "Keep Up With Your Gym Crew",
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center
         )
         Spacer(Modifier.height(8.dp))
         Text(
-            text = "Follow athletes, monitor PRs, and keep up with competition results — all in one place.",
+            text = "Build squads to follow your training partners and friends — track their PRs and competition results in one place.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
         )
         Spacer(Modifier.height(32.dp))
-        EmptyStateFeatureRow(icon = Icons.Filled.Star,    text = "Track personal records for squat, bench and deadlift")
+        EmptyStateFeatureRow(icon = Icons.Filled.Star,    text = "See your training partners' squat, bench and deadlift PRs")
         Spacer(Modifier.height(16.dp))
-        EmptyStateFeatureRow(icon = Icons.Filled.DateRange, text = "Browse full competition history")
+        EmptyStateFeatureRow(icon = Icons.Filled.DateRange, text = "Browse their full competition history")
         Spacer(Modifier.height(16.dp))
         EmptyStateFeatureRow(icon = Icons.Filled.Share,   text = "Share squads with friends using a 6-character code")
         Spacer(Modifier.height(40.dp))
