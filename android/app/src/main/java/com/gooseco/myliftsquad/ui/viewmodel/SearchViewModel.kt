@@ -5,6 +5,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.gooseco.myliftsquad.data.api.OplAthlete
 import com.gooseco.myliftsquad.data.api.OplApiService
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -74,6 +75,8 @@ class SearchViewModel(app: Application) : AndroidViewModel(app) {
             nextMenStart = page.nextMenStart
             nextWomenStart = page.nextWomenStart
             _canLoadMore.value = page.hasMore
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             _error.value = "Search failed: ${e.message}"
         } finally {
