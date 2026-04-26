@@ -30,7 +30,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
@@ -405,45 +407,42 @@ fun SquadsScreen(
     }
 
     squadOptions?.let { squad ->
-        AlertDialog(
+        ModalBottomSheet(
             onDismissRequest = { squadOptions = null },
-            title = { Text(squad.name) },
-            text = {
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    TextButton(
-                        onClick = {
-                            squadOptions = null
-                            squadToRename = squad
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(
-                            text = "Rename",
-                            modifier = Modifier.fillMaxWidth(),
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .padding(bottom = 16.dp)
+            ) {
+                Text(
+                    text = squad.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp)
+                )
+                HorizontalDivider()
+                BottomSheetActionRow(
+                    icon = Icons.Default.Edit,
+                    label = "Rename",
+                    onClick = {
+                        squadOptions = null
+                        squadToRename = squad
                     }
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-                    TextButton(
-                        onClick = {
-                            squadOptions = null
-                            squadToDelete = squad
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(
-                            text = "Delete",
-                            modifier = Modifier.fillMaxWidth(),
-                            color = MaterialTheme.colorScheme.error
-                        )
+                )
+                BottomSheetActionRow(
+                    icon = Icons.Default.Delete,
+                    label = "Delete",
+                    tint = MaterialTheme.colorScheme.error,
+                    onClick = {
+                        squadOptions = null
+                        squadToDelete = squad
                     }
-                }
-            },
-            confirmButton = {},
-            dismissButton = {
-                TextButton(onClick = { squadOptions = null }) { Text("Cancel") }
+                )
             }
-        )
+        }
     }
 
     squadToDelete?.let { squad ->
@@ -714,6 +713,26 @@ private fun RenameSquadDialog(
             TextButton(onClick = onDismiss) { Text("Cancel") }
         }
     )
+}
+
+@Composable
+private fun BottomSheetActionRow(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    tint: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurface,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 24.dp, vertical = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Icon(imageVector = icon, contentDescription = null, tint = tint)
+        Text(text = label, style = MaterialTheme.typography.bodyLarge, color = tint)
+    }
 }
 
 @Composable

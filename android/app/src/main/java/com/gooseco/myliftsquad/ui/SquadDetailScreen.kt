@@ -1,6 +1,7 @@
 package com.gooseco.myliftsquad.ui
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.size
@@ -18,6 +20,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Share
@@ -295,17 +298,57 @@ fun SquadDetailScreen(
         }
     }
 
-    // Options dialog on long-press
+    // Options sheet on long-press
     athleteOptions?.let { athlete ->
         val canFavourite = !athlete.isFavourite && favouriteCount < 3
-        AthleteOptionsDialog(
-            athlete = athlete,
-            canFavourite = canFavourite,
-            onFavourite = { viewModel.toggleFavourite(athlete) },
-            onUnfavourite = { viewModel.toggleFavourite(athlete) },
-            onRemove = { athleteToDelete = athlete },
-            onDismiss = { athleteOptions = null }
-        )
+        ModalBottomSheet(
+            onDismissRequest = { athleteOptions = null },
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .padding(bottom = 16.dp)
+            ) {
+                Text(
+                    text = athlete.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp)
+                )
+                HorizontalDivider()
+                if (canFavourite) {
+                    BottomSheetActionRow(
+                        icon = Icons.Filled.Star,
+                        label = "Add to Favourites",
+                        onClick = {
+                            viewModel.toggleFavourite(athlete)
+                            athleteOptions = null
+                        }
+                    )
+                }
+                if (athlete.isFavourite) {
+                    BottomSheetActionRow(
+                        icon = Icons.Filled.Star,
+                        label = "Remove from Favourites",
+                        onClick = {
+                            viewModel.toggleFavourite(athlete)
+                            athleteOptions = null
+                        }
+                    )
+                }
+                BottomSheetActionRow(
+                    icon = Icons.Filled.Delete,
+                    label = "Remove from Squad",
+                    tint = MaterialTheme.colorScheme.error,
+                    onClick = {
+                        athleteOptions = null
+                        athleteToDelete = athlete
+                    }
+                )
+            }
+        }
     }
 
     // Remove confirmation dialog
@@ -509,61 +552,23 @@ private fun AthleteCard(
 }
 
 @Composable
-private fun AthleteOptionsDialog(
-    athlete: Athlete,
-    canFavourite: Boolean,
-    onFavourite: () -> Unit,
-    onUnfavourite: () -> Unit,
-    onRemove: () -> Unit,
-    onDismiss: () -> Unit
+private fun BottomSheetActionRow(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    tint: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurface,
+    onClick: () -> Unit
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(athlete.name) },
-        text = {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                if (canFavourite) {
-                    TextButton(
-                        onClick = { onFavourite(); onDismiss() },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(
-                            text = "Favourite",
-                            modifier = Modifier.fillMaxWidth(),
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-                }
-                if (athlete.isFavourite) {
-                    TextButton(
-                        onClick = { onUnfavourite(); onDismiss() },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(
-                            text = "Unfavourite",
-                            modifier = Modifier.fillMaxWidth(),
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-                }
-                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-                TextButton(
-                    onClick = { onRemove(); onDismiss() },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        text = "Remove",
-                        modifier = Modifier.fillMaxWidth(),
-                        color = MaterialTheme.colorScheme.error
-                    )
-                }
-            }
-        },
-        confirmButton = {},
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
-        }
-    )
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 24.dp, vertical = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Icon(imageVector = icon, contentDescription = null, tint = tint)
+        Text(text = label, style = MaterialTheme.typography.bodyLarge, color = tint)
+    }
 }
 
 @Composable
