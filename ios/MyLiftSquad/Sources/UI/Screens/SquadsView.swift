@@ -280,7 +280,7 @@ struct EmptySquadsView: View {
                         .font(.title2)
                         .fontWeight(.bold)
                         .multilineTextAlignment(.center)
-                    Text("Build squads to follow your training partners and friends — track their PRs and competition results in one place.")
+                    Text("Build squads to follow your training partners and friends — track their competition PRs and results in one place.")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)

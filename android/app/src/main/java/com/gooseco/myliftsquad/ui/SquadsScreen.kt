@@ -742,7 +742,7 @@ private fun EmptySquadsContent(
         )
         Spacer(Modifier.height(8.dp))
         Text(
-            text = "Build squads to follow your training partners and friends — track their PRs and competition results in one place.",
+            text = "Build squads to follow your training partners and friends — track their competition PRs and results in one place.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
