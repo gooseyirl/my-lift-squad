@@ -96,8 +96,14 @@ struct SearchAthleteView: View {
             } else if vm.query.count < 2 {
                 VStack {
                     Spacer()
-                    Text("Type at least 2 characters to search")
-                        .foregroundColor(.secondary)
+                    VStack(spacing: 6) {
+                        Text("Search OpenPowerlifting records")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                        Text("Type at least 2 characters to search")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
                     Spacer()
                 }
             } else if vm.results.isEmpty {
