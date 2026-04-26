@@ -77,18 +77,36 @@ struct SquadDetailView: View {
         ZStack(alignment: .bottomTrailing) {
             Group {
                 if vm.athletes.isEmpty {
-                    VStack(spacing: 16) {
-                        Spacer()
-                        Image(systemName: "person.badge.plus")
-                            .font(.system(size: 60))
-                            .foregroundColor(.secondary)
-                        Text("No athletes yet")
-                            .font(.title3)
-                            .foregroundColor(.secondary)
-                        Text("Tap + to add an athlete")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                        Spacer()
+                    VStack(spacing: 0) {
+                        Spacer(minLength: 40)
+                        VStack(spacing: 20) {
+                            Image(systemName: "person.badge.plus")
+                                .font(.system(size: 64))
+                                .foregroundColor(.secondary.opacity(0.4))
+                            VStack(spacing: 8) {
+                                Text("No athletes yet")
+                                    .font(.title2)
+                                    .fontWeight(.bold)
+                                Text("Add your training partners and friends to start tracking their progress.")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                                    .multilineTextAlignment(.center)
+                            }
+                            Button {
+                                showSearch = true
+                            } label: {
+                                Text("Add an Athlete")
+                                    .fontWeight(.semibold)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 14)
+                                    .background(Color.accentColor)
+                                    .foregroundColor(.white)
+                                    .clipShape(RoundedRectangle(cornerRadius: 14))
+                            }
+                            .buttonStyle(.plain)
+                        }
+                        .padding(.horizontal, 32)
+                        Spacer(minLength: 40)
                     }
                     .frame(maxWidth: .infinity)
                 } else {
