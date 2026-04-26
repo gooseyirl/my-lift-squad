@@ -95,6 +95,7 @@ private fun formatKgHome(value: Double): String =
 @Composable
 fun SquadsScreen(
     onSquadClick: (Int) -> Unit,
+    onNewSquad: (Int) -> Unit,
     isDonated: Boolean,
     quote: String,
     onSupportDeveloper: () -> Unit,
@@ -125,8 +126,9 @@ fun SquadsScreen(
     var fabExpanded by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
-        viewModel.squadCreated.collect {
+        viewModel.squadCreated.collect { id ->
             showCreateDialog = false
+            onNewSquad(id)
         }
     }
 

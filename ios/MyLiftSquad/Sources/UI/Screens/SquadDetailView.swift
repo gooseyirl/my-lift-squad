@@ -3,6 +3,7 @@ import SwiftData
 
 struct SquadDetailView: View {
     let squad: Squad
+    var autoOpenSearch: Bool = false
     @Environment(\.modelContext) private var modelContext
     @State private var viewModel: SquadDetailViewModel?
     @State private var showSearch = false
@@ -65,6 +66,9 @@ struct SquadDetailView: View {
                 viewModel = SquadDetailViewModel(squad: squad, modelContext: modelContext)
             }
             viewModel?.loadAthletes()
+            if autoOpenSearch {
+                showSearch = true
+            }
         }
     }
 

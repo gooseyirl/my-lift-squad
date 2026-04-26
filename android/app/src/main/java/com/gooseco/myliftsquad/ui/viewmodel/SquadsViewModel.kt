@@ -66,8 +66,8 @@ class SquadsViewModel(app: Application) : AndroidViewModel(app) {
     private val _renameSuccess = MutableSharedFlow<Unit>(replay = 0)
     val renameSuccess: SharedFlow<Unit> = _renameSuccess.asSharedFlow()
 
-    private val _squadCreated = MutableSharedFlow<Unit>(replay = 0)
-    val squadCreated: SharedFlow<Unit> = _squadCreated.asSharedFlow()
+    private val _squadCreated = MutableSharedFlow<Int>(replay = 0)
+    val squadCreated: SharedFlow<Int> = _squadCreated.asSharedFlow()
 
     fun createSquad(name: String) {
         val trimmed = name.trim()
@@ -76,9 +76,9 @@ class SquadsViewModel(app: Application) : AndroidViewModel(app) {
             if (squadDao.countByName(trimmed) > 0) {
                 _nameError.value = "A squad with this name already exists"
             } else {
-                squadDao.insert(Squad(name = trimmed))
+                val id = squadDao.insert(Squad(name = trimmed)).toInt()
                 _nameError.value = null
-                _squadCreated.emit(Unit)
+                _squadCreated.emit(id)
             }
         }
     }

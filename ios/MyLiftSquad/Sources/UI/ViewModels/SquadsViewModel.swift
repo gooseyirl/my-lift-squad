@@ -12,6 +12,9 @@ final class SquadsViewModel {
     var showQuote = false
     var currentQuote = ""
 
+    // Post-creation navigation
+    var newlyCreatedSquad: Squad?
+
     // Rename squad
     var showRenameDialog = false
     var squadToRename: Squad?
@@ -77,6 +80,7 @@ final class SquadsViewModel {
         errorMessage = nil
         showNewSquadDialog = false
         loadData()
+        newlyCreatedSquad = squad
     }
 
     func importSquad() {

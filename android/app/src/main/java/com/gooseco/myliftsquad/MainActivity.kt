@@ -90,6 +90,10 @@ fun MyLiftSquadNavGraph(
                 onSquadClick = { squadId ->
                     navController.navigate("squad/$squadId")
                 },
+                onNewSquad = { squadId ->
+                    navController.navigate("squad/$squadId")
+                    navController.navigate("search/$squadId")
+                },
                 isDonated = isDonated,
                 quote = quote,
                 onSupportDeveloper = onSupportDeveloper,

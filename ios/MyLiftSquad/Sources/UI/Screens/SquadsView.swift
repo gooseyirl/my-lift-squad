@@ -34,6 +34,14 @@ struct SquadsView: View {
             .navigationDestination(isPresented: $navigateToSettings) {
                 SettingsView(modelContext: modelContext)
             }
+            .navigationDestination(isPresented: Binding(
+                get: { viewModel?.newlyCreatedSquad != nil },
+                set: { if !$0 { viewModel?.newlyCreatedSquad = nil } }
+            )) {
+                if let squad = viewModel?.newlyCreatedSquad {
+                    SquadDetailView(squad: squad, autoOpenSearch: true)
+                }
+            }
             .alert("New Squad", isPresented: Binding(
                 get: { viewModel?.showNewSquadDialog ?? false },
                 set: { viewModel?.showNewSquadDialog = $0 }
