@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import CoreImage.CIFilterBuiltins
 
 struct SquadDetailView: View {
     let squad: Squad
@@ -180,7 +181,7 @@ struct SquadDetailView: View {
             ShareCodeSheet(code: vm.shareCode ?? "") {
                 vm.dismissShareCode()
             }
-            .presentationDetents([.height(260)])
+            .presentationDetents([.medium])
             .presentationDragIndicator(.visible)
         }
         .alert("Share Failed", isPresented: Binding(
@@ -235,14 +236,33 @@ struct ShareCodeSheet: View {
     let onDismiss: () -> Void
     @State private var copied = false
 
+    private var qrImage: UIImage? {
+        let context = CIContext()
+        let filter = CIFilter.qrCodeGenerator()
+        filter.message = Data(code.utf8)
+        filter.correctionLevel = "M"
+        guard let ciImage = filter.outputImage else { return nil }
+        let scaled = ciImage.transformed(by: CGAffineTransform(scaleX: 10, y: 10))
+        guard let cgImage = context.createCGImage(scaled, from: scaled.extent) else { return nil }
+        return UIImage(cgImage: cgImage)
+    }
+
     var body: some View {
-        VStack(spacing: 24) {
+        VStack(spacing: 20) {
             Text("Share Code")
                 .font(.headline)
                 .padding(.top, 8)
 
+            if let img = qrImage {
+                Image(uiImage: img)
+                    .interpolation(.none)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 200, height: 200)
+            }
+
             Text(code)
-                .font(.system(size: 42, weight: .bold, design: .monospaced))
+                .font(.system(size: 36, weight: .bold, design: .monospaced))
                 .tracking(6)
                 .foregroundColor(.accentColor)
 
@@ -266,6 +286,9 @@ struct ShareCodeSheet: View {
                     .padding(.horizontal)
             }
             .buttonStyle(.plain)
+
+            Button("Done", role: .cancel) { onDismiss() }
+                .padding(.bottom)
         }
         .padding(.bottom)
     }

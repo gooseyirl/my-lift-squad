@@ -14,14 +14,13 @@ data class AthleteRef(val name: String, val slug: String)
 data class SharedSquad(val name: String, val athletes: List<AthleteRef>)
 data class SharedBundle(val squads: List<SharedSquad>)
 
-class ShareApiService {
-
-    private val client = OkHttpClient.Builder()
+class ShareApiService(
+    private val baseUrl: String = "https://myliftsquad-api.gooseyirl.workers.dev",
+    private val client: OkHttpClient = OkHttpClient.Builder()
         .connectTimeout(15, TimeUnit.SECONDS)
         .readTimeout(15, TimeUnit.SECONDS)
         .build()
-
-    private val baseUrl = "https://myliftsquad-api.gooseyirl.workers.dev"
+) {
     private val json = "application/json; charset=utf-8".toMediaType()
 
     // ── Single squad ─────────────────────────────────────────────────
@@ -89,7 +88,7 @@ class ShareApiService {
 
     // ── Helpers ───────────────────────────────────────────────────────
 
-    private fun buildSquadJson(name: String, athletes: List<AthleteRef>): JSONObject =
+    internal fun buildSquadJson(name: String, athletes: List<AthleteRef>): JSONObject =
         JSONObject().apply {
             put("name", name)
             put("athletes", JSONArray().apply {
@@ -102,7 +101,7 @@ class ShareApiService {
             })
         }
 
-    private fun parseSharedSquad(obj: JSONObject): SharedSquad {
+    internal fun parseSharedSquad(obj: JSONObject): SharedSquad {
         val name = obj.getString("name")
         val athletesArr = obj.getJSONArray("athletes")
         val athletes = (0 until athletesArr.length()).map { i ->

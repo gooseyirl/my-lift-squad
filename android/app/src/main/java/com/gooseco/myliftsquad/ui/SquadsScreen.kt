@@ -1,5 +1,7 @@
 package com.gooseco.myliftsquad.ui
 
+import android.graphics.Bitmap
+import android.graphics.Color as AndroidColor
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -28,6 +30,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
@@ -81,8 +84,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.ClipboardManager
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -92,6 +98,11 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.google.mlkit.vision.barcode.common.Barcode
+import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
+import com.google.mlkit.vision.codescanner.GmsBarcodeScannerOptions
+import com.google.zxing.BarcodeFormat
+import com.google.zxing.qrcode.QRCodeWriter
 import com.gooseco.myliftsquad.R
 import com.gooseco.myliftsquad.data.db.Athlete
 import com.gooseco.myliftsquad.data.db.AthleteWithSquad
@@ -101,6 +112,17 @@ import com.gooseco.myliftsquad.ui.viewmodel.SquadsViewModel
 
 private fun formatKgHome(value: Double): String =
     if (value % 1.0 == 0.0) "${value.toInt()} kg" else "${"%.1f".format(value)} kg"
+
+@Composable
+internal fun rememberQrBitmap(content: String): ImageBitmap? = remember(content) {
+    try {
+        val matrix = QRCodeWriter().encode(content, BarcodeFormat.QR_CODE, 512, 512)
+        val bmp = Bitmap.createBitmap(512, 512, Bitmap.Config.RGB_565)
+        for (x in 0 until 512) for (y in 0 until 512)
+            bmp.setPixel(x, y, if (matrix[x, y]) AndroidColor.BLACK else AndroidColor.WHITE)
+        bmp.asImageBitmap()
+    } catch (_: Exception) { null }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -113,6 +135,14 @@ fun SquadsScreen(
     onNavigateToSettings: () -> Unit,
     viewModel: SquadsViewModel = viewModel()
 ) {
+    val context = LocalContext.current
+    val qrScanner = remember {
+        GmsBarcodeScanning.getClient(
+            context,
+            GmsBarcodeScannerOptions.Builder().setBarcodeFormats(Barcode.FORMAT_QR_CODE).build()
+        )
+    }
+
     val detailViewModel: SquadDetailViewModel = viewModel()
     val competitionHistory by detailViewModel.competitionHistory.collectAsState()
     val historyLoading by detailViewModel.historyLoading.collectAsState()
@@ -475,6 +505,18 @@ fun SquadsScreen(
             onDismiss = {
                 showImportDialog = false
                 viewModel.clearImportError()
+            },
+            onScanQr = {
+                qrScanner.startScan()
+                    .addOnSuccessListener { barcode ->
+                        barcode.rawValue?.uppercase()?.let { code ->
+                            if (code.length == 6) {
+                                showImportDialog = false
+                                viewModel.importSquad(code)
+                            }
+                        }
+                    }
+                    .addOnFailureListener { /* cancelled or error, do nothing */ }
             }
         )
     }
@@ -564,6 +606,7 @@ fun SquadsScreen(
 
     // Share code result
     pendingShareCode?.let { code ->
+        val qrBitmap = rememberQrBitmap(code)
         AlertDialog(
             onDismissRequest = { pendingShareCode = null },
             title = { Text("Share Code") },
@@ -573,6 +616,13 @@ fun SquadsScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier.fillMaxWidth()
                 ) {
+                    qrBitmap?.let { bitmap ->
+                        Image(
+                            bitmap = bitmap,
+                            contentDescription = "QR Code",
+                            modifier = Modifier.size(200.dp)
+                        )
+                    }
                     Text(
                         text = code,
                         style = MaterialTheme.typography.displaySmall.copy(
@@ -1056,7 +1106,8 @@ private fun ImportSquadDialog(
     progress: String? = null,
     errorMessage: String? = null,
     onConfirm: (String) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onScanQr: (() -> Unit)? = null
 ) {
     var code by remember { mutableStateOf("") }
 
@@ -1076,6 +1127,20 @@ private fun ImportSquadDialog(
                         supportingText = errorMessage?.let { msg -> { Text(msg) } },
                         modifier = Modifier.fillMaxWidth()
                     )
+                    if (onScanQr != null) {
+                        TextButton(
+                            onClick = onScanQr,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(
+                                Icons.Filled.CameraAlt,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(Modifier.size(6.dp))
+                            Text("Scan QR Code")
+                        }
+                    }
                 }
                 if (loading) {
                     LinearProgressIndicator(modifier = Modifier.fillMaxWidth())

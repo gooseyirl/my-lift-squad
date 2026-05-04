@@ -18,14 +18,13 @@ data class SearchPage(
     val hasMore: Boolean get() = nextMenStart != null || nextWomenStart != null
 }
 
-class OplApiService {
-
-    private val client = OkHttpClient.Builder()
+class OplApiService(
+    private val baseUrl: String = "https://www.openpowerlifting.org/api",
+    private val client: OkHttpClient = OkHttpClient.Builder()
         .connectTimeout(15, TimeUnit.SECONDS)
         .readTimeout(15, TimeUnit.SECONDS)
         .build()
-
-    private val baseUrl = "https://www.openpowerlifting.org/api"
+) {
 
     /**
      * Search both men and women paths in parallel, combine and deduplicate by slug.
@@ -86,7 +85,7 @@ class OplApiService {
      * 31=Tested, 32=Country, 33=State, 34=Federation, 35=ParentFederation,
      * 36=Date, 37=MeetCountry, 38=MeetState, 39=MeetTown, 40=MeetName, 41=Sanctioned
      */
-    private fun parseCsv(csv: String): List<CompetitionResult> {
+    internal fun parseCsv(csv: String): List<CompetitionResult> {
         val lines = csv.lines()
         if (lines.size < 2) return emptyList()
         return lines.drop(1)
@@ -119,7 +118,7 @@ class OplApiService {
             }
     }
 
-    private fun parseCsvLine(line: String): List<String> {
+    internal fun parseCsvLine(line: String): List<String> {
         val result = mutableListOf<String>()
         val field = StringBuilder()
         var inQuotes = false

@@ -16,9 +16,18 @@ struct SharedBundle: Decodable {
 
 actor ShareApiService {
     static let shared = ShareApiService()
-    private let baseURL = "https://myliftsquad-api.gooseyirl.workers.dev"
+    private let baseURL: String
+    private let session: URLSession
 
-    private init() {}
+    private init() {
+        self.baseURL = "https://myliftsquad-api.gooseyirl.workers.dev"
+        self.session = .shared
+    }
+
+    init(baseURL: String, session: URLSession) {
+        self.baseURL = baseURL
+        self.session = session
+    }
 
     // ── Single squad ──────────────────────────────────────────────────
 
@@ -29,7 +38,7 @@ actor ShareApiService {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try JSONEncoder().encode(SharedSquad(name: name, athletes: athletes))
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await session.data(for: request)
         guard let http = response as? HTTPURLResponse, http.statusCode == 201 else {
             throw URLError(.badServerResponse)
         }
@@ -39,8 +48,8 @@ actor ShareApiService {
 
     /// Returns nil if the code was not found (404), throws on other errors.
     func tryImportSquad(code: String) async throws -> SharedSquad? {
-        guard let url = URL(string: "\(baseURL)/squads/\(code)") else { throw URLError(.badURL) }
-        let (data, response) = try await URLSession.shared.data(from: url)
+        guard let url = URL(string: "\(baseURL)/squads/\(code.uppercased())") else { throw URLError(.badURL) }
+        let (data, response) = try await session.data(from: url)
         guard let http = response as? HTTPURLResponse else { throw URLError(.badServerResponse) }
         if http.statusCode == 404 { return nil }
         guard http.statusCode == 200 else { throw URLError(.badServerResponse) }
@@ -57,7 +66,7 @@ actor ShareApiService {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try JSONEncoder().encode(Payload(squads: squads))
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await session.data(for: request)
         guard let http = response as? HTTPURLResponse, http.statusCode == 201 else {
             throw URLError(.badServerResponse)
         }
@@ -67,8 +76,8 @@ actor ShareApiService {
 
     /// Returns nil if the code was not found (404), throws on other errors.
     func tryImportBundle(code: String) async throws -> SharedBundle? {
-        guard let url = URL(string: "\(baseURL)/bundles/\(code)") else { throw URLError(.badURL) }
-        let (data, response) = try await URLSession.shared.data(from: url)
+        guard let url = URL(string: "\(baseURL)/bundles/\(code.uppercased())") else { throw URLError(.badURL) }
+        let (data, response) = try await session.data(from: url)
         guard let http = response as? HTTPURLResponse else { throw URLError(.badServerResponse) }
         if http.statusCode == 404 { return nil }
         guard http.statusCode == 200 else { throw URLError(.badServerResponse) }

@@ -9,9 +9,18 @@ struct SearchPage {
 
 actor OplApiService {
     static let shared = OplApiService()
-    private let baseURL = "https://www.openpowerlifting.org/api"
+    private let baseURL: String
+    private let session: URLSession
 
-    private init() {}
+    private init() {
+        self.baseURL = "https://www.openpowerlifting.org/api"
+        self.session = .shared
+    }
+
+    init(baseURL: String, session: URLSession) {
+        self.baseURL = baseURL
+        self.session = session
+    }
 
     // MARK: - Search
 
@@ -56,14 +65,14 @@ actor OplApiService {
             let searchURL = "\(baseURL)/search/rankings/\(gender)?q=\(query)&start=\(start)&lang=en&units=kg"
             guard let url = URL(string: searchURL) else { break }
 
-            let (searchData, _) = try await URLSession.shared.data(from: url)
+            let (searchData, _) = try await session.data(from: url)
             guard let json = try? JSONSerialization.jsonObject(with: searchData) as? [String: Any],
                   let nextIndex = json["next_index"] as? Int else { break }
 
             let rankURL = "\(baseURL)/rankings/\(gender)?start=\(nextIndex)&end=\(nextIndex + 24)&lang=en&units=kg"
             guard let rUrl = URL(string: rankURL) else { break }
 
-            let (rankData, _) = try await URLSession.shared.data(from: rUrl)
+            let (rankData, _) = try await session.data(from: rUrl)
             guard let rankJson = try? JSONSerialization.jsonObject(with: rankData) as? [String: Any],
                   let rows = rankJson["rows"] as? [[Any]] else { break }
 
@@ -103,7 +112,7 @@ actor OplApiService {
         let csvURL = "\(baseURL)/liftercsv/\(slug)"
         guard let url = URL(string: csvURL) else { return ([], nil) }
 
-        let (data, _) = try await URLSession.shared.data(from: url)
+        let (data, _) = try await session.data(from: url)
         guard let csvString = String(data: data, encoding: .utf8) else { return ([], nil) }
 
         let results = parseCSV(csvString, slug: slug)
@@ -123,7 +132,7 @@ actor OplApiService {
     //  31=Tested  32=Country  33=State  34=Federation  35=ParentFederation
     //  36=Date  37=MeetCountry  38=MeetState  39=MeetTown  40=MeetName  41=Sanctioned
 
-    private func parseCSV(_ csv: String, slug: String) -> [CompetitionResult] {
+    func parseCSV(_ csv: String, slug: String) -> [CompetitionResult] {
         let lines = csv.components(separatedBy: "\n")
         guard lines.count >= 2 else { return [] }
 
@@ -160,7 +169,7 @@ actor OplApiService {
         }.sorted { $0.date > $1.date }
     }
 
-    private func parseCSVLine(_ line: String) -> [String] {
+    func parseCSVLine(_ line: String) -> [String] {
         var fields: [String] = []
         var current = ""
         var inQuotes = false

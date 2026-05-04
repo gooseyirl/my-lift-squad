@@ -300,7 +300,7 @@ struct SquadsView: View {
             set: { if !$0 { vm.clearImportDialog() } }
         )) {
             ImportSquadSheet(viewModel: vm)
-                .presentationDetents([.height(320)])
+                .presentationDetents([.height(380)])
                 .presentationDragIndicator(.visible)
         }
         .overlay(alignment: .bottom) {
@@ -334,19 +334,15 @@ struct SquadsView: View {
                 }
             }
         }
-        // Share code
-        .alert("Share Code", isPresented: Binding(
+        // Share code sheet (alert can't show images, so we use a sheet for the QR)
+        .sheet(isPresented: Binding(
             get: { vm.shareCode != nil },
             set: { if !$0 { vm.shareCode = nil } }
         )) {
-            Button("Copy Code") {
-                UIPasteboard.general.string = vm.shareCode
-                vm.shareCode = nil
-            }
-            Button("Done", role: .cancel) { vm.shareCode = nil }
-        } message: {
             if let code = vm.shareCode {
-                Text("\(code)\n\nShare this code with anyone using My Lift Squad. It expires in 30 days.")
+                ShareCodeSheet(code: code) { vm.shareCode = nil }
+                    .presentationDetents([.medium])
+                    .presentationDragIndicator(.visible)
             }
         }
         // Share error
@@ -539,6 +535,7 @@ struct FavouriteCard: View {
 struct ImportSquadSheet: View {
     let viewModel: SquadsViewModel
     @FocusState private var isCodeFocused: Bool
+    @State private var showQRScanner = false
 
     var body: some View {
         VStack(spacing: 20) {
@@ -581,6 +578,15 @@ struct ImportSquadSheet: View {
                             .foregroundColor(.red)
                             .padding(.horizontal)
                     }
+
+                    Button {
+                        isCodeFocused = false
+                        showQRScanner = true
+                    } label: {
+                        Label("Scan QR Code", systemImage: "qrcode.viewfinder")
+                            .font(.subheadline)
+                    }
+                    .padding(.top, 4)
                 }
             }
 
@@ -602,6 +608,15 @@ struct ImportSquadSheet: View {
         }
         .padding(.bottom)
         .onAppear { isCodeFocused = true }
+        .sheet(isPresented: $showQRScanner) {
+            QRCodeScannerSheet { scannedCode in
+                let code = scannedCode.uppercased()
+                viewModel.importCode = String(code.prefix(6))
+                if viewModel.importCode.count == 6 {
+                    viewModel.importSquad()
+                }
+            }
+        }
     }
 }
 

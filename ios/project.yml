@@ -63,6 +63,7 @@ targets:
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
         TARGETED_DEVICE_FAMILY: "1"
+        NSCameraUsageDescription: "Camera access is used to scan QR codes for importing squads."
         NSAppTransportSecurity:
           NSAllowsArbitraryLoads: false
           NSExceptionDomains:

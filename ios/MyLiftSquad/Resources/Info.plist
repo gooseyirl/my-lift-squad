@@ -37,6 +37,8 @@
 			</dict>
 		</dict>
 	</dict>
+	<key>NSCameraUsageDescription</key>
+	<string>Camera access is used to scan QR codes for importing squads.</string>
 	<key>TARGETED_DEVICE_FAMILY</key>
 	<string>1</string>
 	<key>UILaunchScreen</key>

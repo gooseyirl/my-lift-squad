@@ -1,6 +1,7 @@
 package com.gooseco.myliftsquad.ui
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -60,6 +61,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
@@ -375,6 +377,7 @@ fun SquadDetailScreen(
 
     // Share code dialog
     shareCode?.let { code ->
+        val qrBitmap = rememberQrBitmap(code)
         AlertDialog(
             onDismissRequest = { viewModel.dismissShareCode() },
             title = { Text("Share code") },
@@ -382,8 +385,15 @@ fun SquadDetailScreen(
                 Column(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
+                    qrBitmap?.let { bitmap ->
+                        Image(
+                            bitmap = bitmap,
+                            contentDescription = "QR Code",
+                            modifier = Modifier.size(200.dp)
+                        )
+                    }
                     Text(
                         text = code,
                         style = MaterialTheme.typography.displaySmall,
@@ -393,7 +403,8 @@ fun SquadDetailScreen(
                     Text(
                         text = "Share this code with anyone to let them import your squad. It expires in 30 days.",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center
                     )
                 }
             },
