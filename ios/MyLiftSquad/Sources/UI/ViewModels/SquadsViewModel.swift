@@ -29,6 +29,10 @@ final class SquadsViewModel {
     var importError: String?
     var importedSquadName: String?
 
+    // Multi-select
+    var selectedSquadIDs: Set<UUID> = []
+    var isSelecting: Bool { !selectedSquadIDs.isEmpty }
+
     // Favourite athlete detail sheet
     var selectedFavourite: Athlete?
     var favouriteHistory: [CompetitionResult] = []
@@ -207,6 +211,33 @@ final class SquadsViewModel {
     func deleteSquad(_ squad: Squad) {
         modelContext.delete(squad)
         try? modelContext.save()
+        loadData()
+    }
+
+    // MARK: - Multi-select
+
+    func beginSelection(_ squad: Squad) {
+        selectedSquadIDs = [squad.id]
+    }
+
+    func toggleSelection(_ squad: Squad) {
+        if selectedSquadIDs.contains(squad.id) {
+            selectedSquadIDs.remove(squad.id)
+        } else {
+            selectedSquadIDs.insert(squad.id)
+        }
+    }
+
+    func cancelSelection() {
+        selectedSquadIDs = []
+    }
+
+    func deleteSelected() {
+        for squad in squads where selectedSquadIDs.contains(squad.id) {
+            modelContext.delete(squad)
+        }
+        try? modelContext.save()
+        selectedSquadIDs = []
         loadData()
     }
 

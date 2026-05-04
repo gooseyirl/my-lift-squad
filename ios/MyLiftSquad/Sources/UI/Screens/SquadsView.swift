@@ -6,8 +6,10 @@ struct SquadsView: View {
     @State private var viewModel: SquadsViewModel?
     @State private var showFABMenu = false
     @State private var navigateToSettings = false
+    @State private var navigatingToSquad: Squad?
     @State private var squadToDelete: Squad?
     @State private var showDeleteConfirm = false
+    @State private var showDeleteSelectedConfirm = false
     @State private var showSupportAlert = false
     private let store = StoreKitManager.shared
 
@@ -20,19 +22,39 @@ struct SquadsView: View {
                     ProgressView()
                 }
             }
-            .navigationTitle("My Lift Squad")
+            .navigationTitle(viewModel?.isSelecting == true
+                ? "\(viewModel?.selectedSquadIDs.count ?? 0) selected"
+                : "My Lift Squad")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Image("app_icon")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 40, height: 40)
-                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                if let vm = viewModel, vm.isSelecting {
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        Button("Cancel") { vm.cancelSelection() }
+                    }
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button {
+                            showDeleteSelectedConfirm = true
+                        } label: {
+                            Image(systemName: "trash")
+                                .foregroundColor(.red)
+                        }
+                        .disabled(vm.selectedSquadIDs.isEmpty)
+                    }
+                } else {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Image("app_icon")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 40, height: 40)
+                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                    }
                 }
             }
             .navigationDestination(isPresented: $navigateToSettings) {
                 SettingsView(modelContext: modelContext)
+            }
+            .navigationDestination(item: $navigatingToSquad) { squad in
+                SquadDetailView(squad: squad)
             }
             .navigationDestination(isPresented: Binding(
                 get: { viewModel?.newlyCreatedSquad != nil },
@@ -76,6 +98,13 @@ struct SquadsView: View {
                 Button("Cancel", role: .cancel) { squadToDelete = nil }
             } message: {
                 Text("Are you sure you want to delete this squad and all its athletes?")
+            }
+            .alert("Delete Squads", isPresented: $showDeleteSelectedConfirm) {
+                Button("Delete", role: .destructive) { viewModel?.deleteSelected() }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                let count = viewModel?.selectedSquadIDs.count ?? 0
+                Text("Delete \(count) squad\(count == 1 ? "" : "s") and all their athletes? This cannot be undone.")
             }
             .alert("Rename Squad", isPresented: Binding(
                 get: { viewModel?.showRenameDialog ?? false },
@@ -142,12 +171,30 @@ struct SquadsView: View {
                         }
                     } else {
                         ForEach(vm.squads) { squad in
-                            SquadRowView(squad: squad) {
-                                squadToDelete = squad
-                                showDeleteConfirm = true
-                            } onRename: {
-                                vm.beginRename(squad)
-                            }
+                            SquadRowView(
+                                squad: squad,
+                                isSelecting: vm.isSelecting,
+                                isSelected: vm.selectedSquadIDs.contains(squad.id),
+                                onTap: {
+                                    if vm.isSelecting {
+                                        vm.toggleSelection(squad)
+                                    } else {
+                                        navigatingToSquad = squad
+                                    }
+                                },
+                                onLongPress: {
+                                    if vm.isSelecting {
+                                        vm.toggleSelection(squad)
+                                    } else {
+                                        vm.beginSelection(squad)
+                                    }
+                                },
+                                onDelete: {
+                                    squadToDelete = squad
+                                    showDeleteConfirm = true
+                                },
+                                onRename: { vm.beginRename(squad) }
+                            )
                         }
                     }
 
@@ -179,8 +226,8 @@ struct SquadsView: View {
                 }
             }
 
-            // FAB area
-            VStack(alignment: .trailing, spacing: 12) {
+            // FAB area — hidden during multi-select
+            if !vm.isSelecting { VStack(alignment: .trailing, spacing: 12) {
                 if showFABMenu {
                     FABMenuItem(icon: "plus.circle", label: "New Squad") {
                         showFABMenu = false
@@ -218,6 +265,7 @@ struct SquadsView: View {
                 }
             }
             .padding()
+            } // end if !vm.isSelecting
         }
         .contentShape(Rectangle())
         .onTapGesture {
@@ -329,46 +377,65 @@ private struct EmptyStateFeatureRow: View {
 
 struct SquadRowView: View {
     let squad: Squad
+    let isSelecting: Bool
+    let isSelected: Bool
+    let onTap: () -> Void
+    let onLongPress: () -> Void
     let onDelete: () -> Void
     let onRename: () -> Void
 
+    @State private var showOptions = false
+
     var body: some View {
-        NavigationLink {
-            SquadDetailView(squad: squad)
-        } label: {
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(squad.name)
-                        .font(.body)
-                        .fontWeight(.medium)
-                        .foregroundColor(.primary)
-                    Text("\(squad.athletes.count) athlete\(squad.athletes.count == 1 ? "" : "s")")
-                        .font(.caption)
+        HStack {
+            if isSelecting {
+                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                    .foregroundColor(isSelected ? .accentColor : .secondary)
+                    .font(.title3)
+                    .padding(.trailing, 4)
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(squad.name)
+                    .font(.body)
+                    .fontWeight(.medium)
+                    .foregroundColor(.primary)
+                Text("\(squad.athletes.count) athlete\(squad.athletes.count == 1 ? "" : "s")")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+
+            Spacer()
+
+            if isSelecting {
+                EmptyView()
+            } else {
+                Button {
+                    showOptions = true
+                } label: {
+                    Image(systemName: "ellipsis")
                         .foregroundColor(.secondary)
+                        .padding(.leading, 8)
                 }
-                Spacer()
+                .buttonStyle(.plain)
+                .confirmationDialog(squad.name, isPresented: $showOptions, titleVisibility: .visible) {
+                    Button("Rename") { onRename() }
+                    Button("Delete", role: .destructive) { onDelete() }
+                }
+
                 Image(systemName: "chevron.right")
                     .foregroundColor(.secondary)
                     .font(.caption)
             }
-            .padding(.horizontal)
-            .padding(.vertical, 12)
-            .background(Color(.systemBackground))
         }
-        .contextMenu {
-            Button {
-                onRename()
-            } label: {
-                Label("Rename Squad", systemImage: "pencil")
-            }
-            Button(role: .destructive) {
-                onDelete()
-            } label: {
-                Label("Delete Squad", systemImage: "trash")
-            }
-        }
-        Divider()
-            .padding(.leading)
+        .padding(.horizontal)
+        .padding(.vertical, 12)
+        .background(isSelected ? Color.accentColor.opacity(0.12) : Color(.systemBackground))
+        .contentShape(Rectangle())
+        .onTapGesture { onTap() }
+        .onLongPressGesture { onLongPress() }
+
+        Divider().padding(.leading)
     }
 }
 

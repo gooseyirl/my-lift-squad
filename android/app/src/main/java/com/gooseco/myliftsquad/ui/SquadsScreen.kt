@@ -28,20 +28,25 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
+import androidx.activity.compose.BackHandler
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Badge
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -113,6 +118,8 @@ fun SquadsScreen(
 
     val squads by viewModel.squads.collectAsState()
     val favourites by viewModel.favourites.collectAsState()
+    val selectedSquadIds by viewModel.selectedSquadIds.collectAsState()
+    val isSelecting = selectedSquadIds.isNotEmpty()
     val snackbarHostState = remember { SnackbarHostState() }
     val nameError by viewModel.nameError.collectAsState()
     val renameError by viewModel.renameError.collectAsState()
@@ -122,10 +129,15 @@ fun SquadsScreen(
     var showCreateDialog by remember { mutableStateOf(false) }
     var showImportDialog by remember { mutableStateOf(false) }
     var squadToDelete by remember { mutableStateOf<SquadWithCount?>(null) }
+    var showDeleteSelectedConfirm by remember { mutableStateOf(false) }
     var squadToRename by remember { mutableStateOf<SquadWithCount?>(null) }
     var squadOptions by remember { mutableStateOf<SquadWithCount?>(null) }
     var athleteToUnfavourite by remember { mutableStateOf<Athlete?>(null) }
     var fabExpanded by remember { mutableStateOf(false) }
+
+    if (isSelecting) {
+        BackHandler { viewModel.cancelSelection() }
+    }
 
     LaunchedEffect(Unit) {
         viewModel.squadCreated.collect { id ->
@@ -152,36 +164,68 @@ fun SquadsScreen(
         Scaffold(
             snackbarHost = { SnackbarHost(snackbarHostState) },
             topBar = {
-                TopAppBar(
-                    title = {
-                        Column {
+                if (isSelecting) {
+                    TopAppBar(
+                        navigationIcon = {
+                            IconButton(onClick = { viewModel.cancelSelection() }) {
+                                Icon(Icons.Filled.Close, contentDescription = "Cancel")
+                            }
+                        },
+                        title = {
                             Text(
-                                text = "My Lift Squad",
-                                fontSize = 28.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
+                                text = "${selectedSquadIds.size} selected",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.SemiBold
                             )
-                            Text(
-                                text = "Keep track of your squads",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    },
-                    actions = {
-                        Image(
-                            painter = painterResource(id = R.drawable.app_icon),
-                            contentDescription = "My Lift Squad",
-                            modifier = Modifier
-                                .padding(end = 12.dp)
-                                .size(48.dp)
-                                .clip(RoundedCornerShape(12.dp))
+                        },
+                        actions = {
+                            IconButton(
+                                onClick = { showDeleteSelectedConfirm = true },
+                                enabled = selectedSquadIds.isNotEmpty()
+                            ) {
+                                Icon(
+                                    Icons.Filled.Delete,
+                                    contentDescription = "Delete selected",
+                                    tint = MaterialTheme.colorScheme.error
+                                )
+                            }
+                        },
+                        colors = TopAppBarDefaults.topAppBarColors(
+                            containerColor = MaterialTheme.colorScheme.surface
                         )
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.surface
                     )
-                )
+                } else {
+                    TopAppBar(
+                        title = {
+                            Column {
+                                Text(
+                                    text = "My Lift Squad",
+                                    fontSize = 28.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Text(
+                                    text = "Keep track of your squads",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        },
+                        actions = {
+                            Image(
+                                painter = painterResource(id = R.drawable.app_icon),
+                                contentDescription = "My Lift Squad",
+                                modifier = Modifier
+                                    .padding(end = 12.dp)
+                                    .size(48.dp)
+                                    .clip(RoundedCornerShape(12.dp))
+                            )
+                        },
+                        colors = TopAppBarDefaults.topAppBarColors(
+                            containerColor = MaterialTheme.colorScheme.surface
+                        )
+                    )
+                }
             }
         ) { innerPadding ->
             if (squads.isEmpty() && favourites.isEmpty()) {
@@ -239,8 +283,17 @@ fun SquadsScreen(
                     items(squads, key = { it.id }) { squad ->
                         SquadCard(
                             squad = squad,
-                            onClick = { onSquadClick(squad.id) },
-                            onLongPress = { squadOptions = squad }
+                            isSelected = squad.id in selectedSquadIds,
+                            isSelecting = isSelecting,
+                            onClick = {
+                                if (isSelecting) viewModel.toggleSelection(squad.id)
+                                else onSquadClick(squad.id)
+                            },
+                            onLongClick = {
+                                if (isSelecting) viewModel.toggleSelection(squad.id)
+                                else viewModel.beginSelection(squad.id)
+                            },
+                            onOptions = { squadOptions = squad }
                         )
                     }
                 }
@@ -290,8 +343,8 @@ fun SquadsScreen(
             }
         }
 
-        // Speed dial FAB
-        Column(
+        // Speed dial FAB — hidden during multi-select
+        if (!isSelecting) Column(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .navigationBarsPadding()
@@ -466,6 +519,28 @@ fun SquadsScreen(
         )
     }
 
+    if (showDeleteSelectedConfirm) {
+        val count = selectedSquadIds.size
+        AlertDialog(
+            onDismissRequest = { showDeleteSelectedConfirm = false },
+            title = { Text("Delete $count squad${if (count == 1) "" else "s"}") },
+            text = { Text("This will permanently delete $count squad${if (count == 1) "" else "s"} and all their athletes.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.deleteSelected()
+                    showDeleteSelectedConfirm = false
+                }) {
+                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteSelectedConfirm = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
     squadToRename?.let { squad ->
         RenameSquadDialog(
             currentName = squad.name,
@@ -628,28 +703,44 @@ private fun FavouriteAthleteCard(
 @Composable
 private fun SquadCard(
     squad: SquadWithCount,
+    isSelected: Boolean,
+    isSelecting: Boolean,
     onClick: () -> Unit,
-    onLongPress: () -> Unit
+    onLongClick: () -> Unit,
+    onOptions: () -> Unit
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .combinedClickable(
-                onClick = onClick,
-                onLongClick = onLongPress
-            ),
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
+            containerColor = if (isSelected)
+                MaterialTheme.colorScheme.primaryContainer
+            else
+                MaterialTheme.colorScheme.surfaceVariant
         )
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(horizontal = 16.dp, vertical = 16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // Selection indicator
+            if (isSelecting) {
+                Icon(
+                    imageVector = if (isSelected) Icons.Filled.CheckCircle else Icons.Filled.RadioButtonUnchecked,
+                    contentDescription = null,
+                    tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+                    modifier = Modifier
+                        .size(24.dp)
+                        .padding(end = 0.dp)
+                )
+                Spacer(Modifier.size(12.dp))
+            }
+
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = squad.name,
@@ -658,21 +749,41 @@ private fun SquadCard(
                     color = MaterialTheme.colorScheme.onSurface
                 )
             }
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Person,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
-                )
-                Text(
-                    text = squad.athleteCount.toString(),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
+
+            if (isSelecting) {
+                // Athlete count only — no options button in selection mode
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Icon(Icons.Default.Person, null, tint = MaterialTheme.colorScheme.primary)
+                    Text(
+                        text = squad.athleteCount.toString(),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            } else {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Icon(Icons.Default.Person, null, tint = MaterialTheme.colorScheme.primary)
+                    Text(
+                        text = squad.athleteCount.toString(),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    IconButton(onClick = onOptions, modifier = Modifier.size(36.dp)) {
+                        Icon(
+                            Icons.Filled.MoreVert,
+                            contentDescription = "Options",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
             }
         }
     }

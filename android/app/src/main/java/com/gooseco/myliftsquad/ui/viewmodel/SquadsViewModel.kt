@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class SquadsViewModel(app: Application) : AndroidViewModel(app) {
@@ -222,6 +223,38 @@ class SquadsViewModel(app: Application) : AndroidViewModel(app) {
                 athleteDao.moveFavouritesToSquad(squad.id, systemSquad.id)
             }
             squadDao.delete(Squad(id = squad.id, name = squad.name))
+        }
+    }
+
+    // ── Multi-select ────────────────────────────────────────────────
+
+    private val _selectedSquadIds = MutableStateFlow<Set<Int>>(emptySet())
+    val selectedSquadIds: StateFlow<Set<Int>> = _selectedSquadIds.asStateFlow()
+
+    fun beginSelection(squadId: Int) {
+        _selectedSquadIds.value = setOf(squadId)
+    }
+
+    fun toggleSelection(squadId: Int) {
+        _selectedSquadIds.update { current ->
+            if (squadId in current) current - squadId else current + squadId
+        }
+    }
+
+    fun cancelSelection() {
+        _selectedSquadIds.value = emptySet()
+    }
+
+    fun deleteSelected() {
+        val ids = _selectedSquadIds.value.toSet()
+        viewModelScope.launch {
+            val systemSquad = squadDao.getSystemSquad()
+            ids.forEach { id ->
+                val squad = squads.value.find { it.id == id } ?: return@forEach
+                if (systemSquad != null) athleteDao.moveFavouritesToSquad(id, systemSquad.id)
+                squadDao.delete(Squad(id = id, name = squad.name))
+            }
+            _selectedSquadIds.value = emptySet()
         }
     }
 }
