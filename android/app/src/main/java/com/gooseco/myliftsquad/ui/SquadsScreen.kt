@@ -30,6 +30,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
@@ -80,6 +81,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.ClipboardManager
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -120,7 +124,10 @@ fun SquadsScreen(
     val favourites by viewModel.favourites.collectAsState()
     val selectedSquadIds by viewModel.selectedSquadIds.collectAsState()
     val isSelecting = selectedSquadIds.isNotEmpty()
+    val shareLoading by viewModel.shareLoading.collectAsState()
+    val shareError by viewModel.shareError.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    val clipboardManager = LocalClipboardManager.current
     val nameError by viewModel.nameError.collectAsState()
     val renameError by viewModel.renameError.collectAsState()
     val importLoading by viewModel.importLoading.collectAsState()
@@ -128,6 +135,7 @@ fun SquadsScreen(
     val importError by viewModel.importError.collectAsState()
     var showCreateDialog by remember { mutableStateOf(false) }
     var showImportDialog by remember { mutableStateOf(false) }
+    var pendingShareCode by remember { mutableStateOf<String?>(null) }
     var squadToDelete by remember { mutableStateOf<SquadWithCount?>(null) }
     var showDeleteSelectedConfirm by remember { mutableStateOf(false) }
     var squadToRename by remember { mutableStateOf<SquadWithCount?>(null) }
@@ -155,7 +163,13 @@ fun SquadsScreen(
     LaunchedEffect(Unit) {
         viewModel.importedSquadName.collect { name ->
             showImportDialog = false
-            snackbarHostState.showSnackbar("\"$name\" imported successfully")
+            snackbarHostState.showSnackbar("$name imported successfully")
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.shareCode.collect { code ->
+            pendingShareCode = code
         }
     }
 
@@ -180,8 +194,14 @@ fun SquadsScreen(
                         },
                         actions = {
                             IconButton(
+                                onClick = { viewModel.shareSelected() },
+                                enabled = selectedSquadIds.isNotEmpty() && !shareLoading
+                            ) {
+                                Icon(Icons.Filled.Share, contentDescription = "Share selected")
+                            }
+                            IconButton(
                                 onClick = { showDeleteSelectedConfirm = true },
-                                enabled = selectedSquadIds.isNotEmpty()
+                                enabled = selectedSquadIds.isNotEmpty() && !shareLoading
                             ) {
                                 Icon(
                                     Icons.Filled.Delete,
@@ -515,6 +535,84 @@ fun SquadsScreen(
                 TextButton(onClick = { squadToDelete = null }) {
                     Text("Cancel")
                 }
+            }
+        )
+    }
+
+    // Share loading
+    if (shareLoading) {
+        AlertDialog(
+            onDismissRequest = {},
+            title = { Text("Sharing…") },
+            text = {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                    Text(
+                        "Uploading squads to server",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            },
+            confirmButton = {}
+        )
+    }
+
+    // Share code result
+    pendingShareCode?.let { code ->
+        AlertDialog(
+            onDismissRequest = { pendingShareCode = null },
+            title = { Text("Share Code") },
+            text = {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = code,
+                        style = MaterialTheme.typography.displaySmall.copy(
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 6.sp
+                        ),
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text = "Share this code with anyone using My Lift Squad. It expires in 30 days.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    clipboardManager.setText(AnnotatedString(code))
+                    pendingShareCode = null
+                }) {
+                    Icon(Icons.Filled.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.size(6.dp))
+                    Text("Copy Code")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingShareCode = null }) { Text("Done") }
+            }
+        )
+    }
+
+    // Share error
+    shareError?.let { msg ->
+        AlertDialog(
+            onDismissRequest = { viewModel.clearShareError() },
+            title = { Text("Share Failed") },
+            text = { Text(msg) },
+            confirmButton = {
+                TextButton(onClick = { viewModel.clearShareError() }) { Text("OK") }
             }
         )
     }

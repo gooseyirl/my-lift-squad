@@ -33,6 +33,11 @@ final class SquadsViewModel {
     var selectedSquadIDs: Set<UUID> = []
     var isSelecting: Bool { !selectedSquadIDs.isEmpty }
 
+    // Share
+    var isSharing = false
+    var shareError: String?
+    var shareCode: String?
+
     // Favourite athlete detail sheet
     var selectedFavourite: Athlete?
     var favouriteHistory: [CompetitionResult] = []
@@ -96,75 +101,97 @@ final class SquadsViewModel {
         Task {
             isImporting = true
             importError = nil
-            importProgress = "Fetching squad..."
-            defer {
-                isImporting = false
-                importProgress = nil
-            }
+            importProgress = "Looking up code..."
+            defer { isImporting = false; importProgress = nil }
             do {
-                let shared = try await ShareApiService.shared.importSquad(code: code)
-
-                let allSquads = FetchDescriptor<Squad>(predicate: #Predicate { !$0.isSystem })
-                let existing = (try? modelContext.fetch(allSquads)) ?? []
-                guard !existing.contains(where: { $0.name.lowercased() == shared.name.lowercased() }) else {
-                    importError = "You already have a squad named \"\(shared.name)\""
-                    return
-                }
-
-                let squad = Squad(name: shared.name)
-                modelContext.insert(squad)
-                try? modelContext.save()
-
-                let total = shared.athletes.count
-                for (index, ref) in shared.athletes.enumerated() {
-                    importProgress = "Fetching data for \(ref.name) (\(index + 1) of \(total))..."
-                    let athlete = Athlete(name: ref.name, slug: ref.slug, country: "", federation: "")
-                    athlete.squad = squad
-                    modelContext.insert(athlete)
-                    try? modelContext.save()
-
-                    if let (results, _) = try? await OplApiService.shared.fetchHistory(slug: ref.slug),
-                       !results.isEmpty {
-                        let slug = ref.slug
-                        for result in results {
-                            modelContext.insert(CompetitionEntry(
-                                athleteSlug: slug, date: result.date, meetName: result.meetName,
-                                federation: result.federation, equipment: result.equipment,
-                                division: result.division, weightClassKg: result.weightClassKg,
-                                bodyweightKg: result.bodyweightKg, best3SquatKg: result.best3SquatKg,
-                                best3BenchKg: result.best3BenchKg, best3DeadliftKg: result.best3DeadliftKg,
-                                totalKg: result.totalKg, place: result.place, dots: result.dots,
-                                meetCountry: result.meetCountry, meetTown: result.meetTown
-                            ))
-                        }
-                        let prs = PrCalculator.calculate(from: results)
-                        athlete.bestSquatKg = prs.bestSquat
-                        athlete.bestBenchKg = prs.bestBench
-                        athlete.bestDeadliftKg = prs.bestDeadlift
-                        athlete.bestTotalKg = prs.bestTotal
-                        if let latest = results.first {
-                            if !latest.federation.isEmpty { athlete.federation = latest.federation }
-                            if !latest.weightClassKg.isEmpty { athlete.weightClass = latest.weightClassKg }
-                            if !latest.equipment.isEmpty { athlete.equipment = latest.equipment }
-                            athlete.lastCompDate = latest.date
-                        }
-                        try? modelContext.save()
+                // Try bundle first, fall back to single squad
+                if let bundle = try await ShareApiService.shared.tryImportBundle(code: code) {
+                    for (index, shared) in bundle.squads.enumerated() {
+                        importProgress = "Importing \"\(shared.name)\" (\(index + 1) of \(bundle.squads.count))..."
+                        try await importSquadData(shared)
                     }
+                    let label = bundle.squads.count == 1
+                        ? "\"\(bundle.squads[0].name)\""
+                        : "\(bundle.squads.count) squads"
+                    showImportDialog = false
+                    importCode = ""
+                    loadData()
+                    importedSquadName = label
+                } else if let shared = try await ShareApiService.shared.tryImportSquad(code: code) {
+                    importProgress = "Fetching squad..."
+                    try await importSquadData(shared)
+                    showImportDialog = false
+                    importCode = ""
+                    loadData()
+                    importedSquadName = "\"\(shared.name)\""
+                } else {
+                    importError = "Code not found. Check and try again."
                 }
-
-                let squadName = shared.name
-                showImportDialog = false
-                importCode = ""
-                loadData()
-                importedSquadName = squadName
-                Task {
-                    try? await Task.sleep(nanoseconds: 3_000_000_000)
-                    importedSquadName = nil
+                if importedSquadName != nil {
+                    Task {
+                        try? await Task.sleep(nanoseconds: 3_000_000_000)
+                        importedSquadName = nil
+                    }
                 }
             } catch {
                 importError = error.localizedDescription
             }
         }
+    }
+
+    private func importSquadData(_ shared: SharedSquad) async throws {
+        let name = uniqueSquadName(base: shared.name)
+        let squad = Squad(name: name)
+        modelContext.insert(squad)
+        try? modelContext.save()
+
+        let total = shared.athletes.count
+        for (index, ref) in shared.athletes.enumerated() {
+            importProgress = "Fetching data for \(ref.name) (\(index + 1) of \(total))..."
+            let athlete = Athlete(name: ref.name, slug: ref.slug, country: "", federation: "")
+            athlete.squad = squad
+            modelContext.insert(athlete)
+            try? modelContext.save()
+
+            if let (results, _) = try? await OplApiService.shared.fetchHistory(slug: ref.slug),
+               !results.isEmpty {
+                for result in results {
+                    modelContext.insert(CompetitionEntry(
+                        athleteSlug: ref.slug, date: result.date, meetName: result.meetName,
+                        federation: result.federation, equipment: result.equipment,
+                        division: result.division, weightClassKg: result.weightClassKg,
+                        bodyweightKg: result.bodyweightKg, best3SquatKg: result.best3SquatKg,
+                        best3BenchKg: result.best3BenchKg, best3DeadliftKg: result.best3DeadliftKg,
+                        totalKg: result.totalKg, place: result.place, dots: result.dots,
+                        meetCountry: result.meetCountry, meetTown: result.meetTown
+                    ))
+                }
+                let prs = PrCalculator.calculate(from: results)
+                athlete.bestSquatKg = prs.bestSquat
+                athlete.bestBenchKg = prs.bestBench
+                athlete.bestDeadliftKg = prs.bestDeadlift
+                athlete.bestTotalKg = prs.bestTotal
+                if let latest = results.first {
+                    if !latest.federation.isEmpty { athlete.federation = latest.federation }
+                    if !latest.weightClassKg.isEmpty { athlete.weightClass = latest.weightClassKg }
+                    if !latest.equipment.isEmpty { athlete.equipment = latest.equipment }
+                    athlete.lastCompDate = latest.date
+                }
+                try? modelContext.save()
+            }
+        }
+    }
+
+    private func uniqueSquadName(base: String) -> String {
+        let allSquads = FetchDescriptor<Squad>(predicate: #Predicate { !$0.isSystem })
+        let existing = (try? modelContext.fetch(allSquads)) ?? []
+        let names = Set(existing.map { $0.name.lowercased() })
+        if !names.contains(base.lowercased()) { return base }
+        for i in 2...99 {
+            let candidate = "\(base) (\(i))"
+            if !names.contains(candidate.lowercased()) { return candidate }
+        }
+        return base
     }
 
     func clearImportDialog() {
@@ -212,6 +239,40 @@ final class SquadsViewModel {
         modelContext.delete(squad)
         try? modelContext.save()
         loadData()
+    }
+
+    // MARK: - Share selected
+
+    func shareSelected() {
+        let ids = selectedSquadIDs
+        guard !ids.isEmpty else { return }
+        Task {
+            isSharing = true
+            shareError = nil
+            defer { isSharing = false }
+            do {
+                let squadsToShare: [SharedSquad] = squads
+                    .filter { ids.contains($0.id) }
+                    .compactMap { squad in
+                        let refs = squad.athletes
+                            .filter { !$0.slug.isEmpty }
+                            .map { AthleteRef(name: $0.name, slug: $0.slug) }
+                        guard !refs.isEmpty else { return nil }
+                        return SharedSquad(name: squad.name, athletes: refs)
+                    }
+                guard !squadsToShare.isEmpty else {
+                    shareError = "Selected squads have no athletes to share."
+                    return
+                }
+                let code = squadsToShare.count == 1
+                    ? try await ShareApiService.shared.shareSquad(name: squadsToShare[0].name, athletes: squadsToShare[0].athletes)
+                    : try await ShareApiService.shared.shareBundle(squads: squadsToShare)
+                cancelSelection()
+                shareCode = code
+            } catch {
+                shareError = error.localizedDescription
+            }
+        }
     }
 
     // MARK: - Multi-select

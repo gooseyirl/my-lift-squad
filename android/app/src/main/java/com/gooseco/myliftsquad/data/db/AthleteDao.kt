@@ -13,6 +13,9 @@ interface AthleteDao {
     @Query("SELECT * FROM athletes WHERE squadId = :squadId ORDER BY name ASC")
     fun getAthletesForSquad(squadId: Int): Flow<List<Athlete>>
 
+    @Query("SELECT * FROM athletes WHERE squadId = :squadId ORDER BY name ASC")
+    suspend fun getAthletesBySquadId(squadId: Int): List<Athlete>
+
     @Query("""
         SELECT athletes.*, squads.name as squadName
         FROM athletes

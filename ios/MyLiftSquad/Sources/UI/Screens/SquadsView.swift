@@ -32,13 +32,22 @@ struct SquadsView: View {
                         Button("Cancel") { vm.cancelSelection() }
                     }
                     ToolbarItem(placement: .navigationBarTrailing) {
-                        Button {
-                            showDeleteSelectedConfirm = true
-                        } label: {
-                            Image(systemName: "trash")
-                                .foregroundColor(.red)
+                        HStack(spacing: 4) {
+                            Button {
+                                vm.shareSelected()
+                            } label: {
+                                Image(systemName: "square.and.arrow.up")
+                            }
+                            .disabled(vm.selectedSquadIDs.isEmpty || vm.isSharing)
+
+                            Button {
+                                showDeleteSelectedConfirm = true
+                            } label: {
+                                Image(systemName: "trash")
+                                    .foregroundColor(.red)
+                            }
+                            .disabled(vm.selectedSquadIDs.isEmpty || vm.isSharing)
                         }
-                        .disabled(vm.selectedSquadIDs.isEmpty)
                     }
                 } else {
                     ToolbarItem(placement: .navigationBarTrailing) {
@@ -296,7 +305,7 @@ struct SquadsView: View {
         }
         .overlay(alignment: .bottom) {
             if let name = vm.importedSquadName {
-                Text("\"\(name)\" imported successfully")
+                Text("\(name) imported successfully")
                     .font(.subheadline)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 10)
@@ -307,6 +316,48 @@ struct SquadsView: View {
             }
         }
         .animation(.easeInOut, value: vm.importedSquadName)
+        // Share loading overlay
+        .overlay {
+            if vm.isSharing {
+                ZStack {
+                    Color.black.opacity(0.3).ignoresSafeArea()
+                    VStack(spacing: 16) {
+                        ProgressView()
+                            .scaleEffect(1.3)
+                        Text("Uploading squads…")
+                            .font(.subheadline)
+                    }
+                    .padding(28)
+                    .background(Color(.systemBackground))
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                    .shadow(radius: 8)
+                }
+            }
+        }
+        // Share code
+        .alert("Share Code", isPresented: Binding(
+            get: { vm.shareCode != nil },
+            set: { if !$0 { vm.shareCode = nil } }
+        )) {
+            Button("Copy Code") {
+                UIPasteboard.general.string = vm.shareCode
+                vm.shareCode = nil
+            }
+            Button("Done", role: .cancel) { vm.shareCode = nil }
+        } message: {
+            if let code = vm.shareCode {
+                Text("\(code)\n\nShare this code with anyone using My Lift Squad. It expires in 30 days.")
+            }
+        }
+        // Share error
+        .alert("Share Failed", isPresented: Binding(
+            get: { vm.shareError != nil },
+            set: { if !$0 { vm.shareError = nil } }
+        )) {
+            Button("OK", role: .cancel) { vm.shareError = nil }
+        } message: {
+            Text(vm.shareError ?? "")
+        }
     }
 }
 

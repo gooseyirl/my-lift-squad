@@ -12,9 +12,14 @@ interface SquadPayload {
   athletes: AthleteRef[];
 }
 
+interface BundlePayload {
+  squads: SquadPayload[];
+}
+
 const CODE_LENGTH = 6;
 const TTL_SECONDS = 30 * 24 * 60 * 60; // 30 days
 const MAX_ATHLETES = 30;
+const MAX_SQUADS_PER_BUNDLE = 10;
 const CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no O/0, I/1 to avoid confusion
 
 function generateCode(): string {
@@ -42,6 +47,21 @@ function corsHeaders(origin: string): HeadersInit {
   };
 }
 
+function validateSquad(squad: SquadPayload): string | null {
+  const name = squad.name?.trim();
+  if (!name || typeof name !== 'string' || name.length > 100)
+    return 'Each squad must have a name under 100 characters';
+  if (!Array.isArray(squad.athletes) || squad.athletes.length === 0)
+    return `Squad "${name}" must have at least one athlete`;
+  if (squad.athletes.length > MAX_ATHLETES)
+    return `Squad "${name}" exceeds the maximum of ${MAX_ATHLETES} athletes`;
+  if (!squad.athletes.every(a =>
+    a && typeof a.name === 'string' && a.name.length > 0 && a.name.length <= 200 &&
+    typeof a.slug === 'string' && a.slug.length > 0 && a.slug.length <= 100
+  )) return `Squad "${name}" contains an invalid athlete`;
+  return null;
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
@@ -57,55 +77,82 @@ export default {
       return new Response(res.body, { status: res.status, headers });
     };
 
-    // POST /squads — create a share code
+    // ── Single squad ─────────────────────────────────────────────────
+
+    // POST /squads — create a share code for a single squad
     if (request.method === 'POST' && url.pathname === '/squads') {
       let payload: SquadPayload;
-      try {
-        payload = await request.json();
-      } catch {
-        return addCors(error('Invalid JSON', 400));
-      }
+      try { payload = await request.json(); }
+      catch { return addCors(error('Invalid JSON', 400)); }
 
-      const name = payload.name?.trim();
+      const validationError = validateSquad(payload);
+      if (validationError) return addCors(error(validationError, 400));
+
+      const name = payload.name.trim();
       const athletes = payload.athletes;
 
-      if (!name || typeof name !== 'string' || name.length > 100) {
-        return addCors(error('name is required and must be under 100 characters', 400));
-      }
-      if (!Array.isArray(athletes) || athletes.length === 0) {
-        return addCors(error('athletes must be a non-empty array', 400));
-      }
-      if (athletes.length > MAX_ATHLETES) {
-        return addCors(error(`Maximum ${MAX_ATHLETES} athletes per squad`, 400));
-      }
-      if (!athletes.every(a =>
-        a && typeof a.name === 'string' && a.name.length > 0 && a.name.length <= 200 &&
-        typeof a.slug === 'string' && a.slug.length > 0 && a.slug.length <= 100
-      )) {
-        return addCors(error('Each athlete must have a non-empty name and slug', 400));
-      }
-
-      // Generate a unique code
       let code = generateCode();
       for (let i = 0; i < 5; i++) {
-        const existing = await env.SQUADS.get(code);
-        if (!existing) break;
+        if (!(await env.SQUADS.get(code))) break;
         code = generateCode();
       }
 
-      const value = JSON.stringify({ name, athletes, createdAt: new Date().toISOString() });
-      await env.SQUADS.put(code, value, { expirationTtl: TTL_SECONDS });
-
+      await env.SQUADS.put(code, JSON.stringify({ name, athletes, createdAt: new Date().toISOString() }), { expirationTtl: TTL_SECONDS });
       return addCors(json({ code }, 201));
     }
 
-    // GET /squads/:code — fetch a squad by code
+    // GET /squads/:code — fetch a single squad by code
     if (request.method === 'GET') {
-      const match = url.pathname.match(/^\/squads\/([A-Z0-9]{6})$/);
+      const match = url.pathname.match(/^\/squads\/([A-Z0-9]{6})$/i);
       if (match) {
-        const code = match[1];
+        const code = match[1].toUpperCase();
         const raw = await env.SQUADS.get(code);
         if (!raw) return addCors(error('Squad not found or link has expired', 404));
+        return addCors(json(JSON.parse(raw)));
+      }
+    }
+
+    // ── Bundle (multiple squads) ──────────────────────────────────────
+
+    // POST /bundles — create a share code for multiple squads
+    if (request.method === 'POST' && url.pathname === '/bundles') {
+      let payload: BundlePayload;
+      try { payload = await request.json(); }
+      catch { return addCors(error('Invalid JSON', 400)); }
+
+      const squads = payload.squads;
+      if (!Array.isArray(squads) || squads.length === 0)
+        return addCors(error('squads must be a non-empty array', 400));
+      if (squads.length > MAX_SQUADS_PER_BUNDLE)
+        return addCors(error(`Maximum ${MAX_SQUADS_PER_BUNDLE} squads per bundle`, 400));
+
+      for (const squad of squads) {
+        const err = validateSquad(squad);
+        if (err) return addCors(error(err, 400));
+      }
+
+      const normalised = squads.map(s => ({
+        name: s.name.trim(),
+        athletes: s.athletes,
+      }));
+
+      let code = generateCode();
+      for (let i = 0; i < 5; i++) {
+        if (!(await env.SQUADS.get('bundle:' + code))) break;
+        code = generateCode();
+      }
+
+      await env.SQUADS.put('bundle:' + code, JSON.stringify({ squads: normalised, createdAt: new Date().toISOString() }), { expirationTtl: TTL_SECONDS });
+      return addCors(json({ code }, 201));
+    }
+
+    // GET /bundles/:code — fetch a bundle by code
+    if (request.method === 'GET') {
+      const match = url.pathname.match(/^\/bundles\/([A-Z0-9]{6})$/i);
+      if (match) {
+        const code = match[1].toUpperCase();
+        const raw = await env.SQUADS.get('bundle:' + code);
+        if (!raw) return addCors(error('Bundle not found or link has expired', 404));
         return addCors(json(JSON.parse(raw)));
       }
     }

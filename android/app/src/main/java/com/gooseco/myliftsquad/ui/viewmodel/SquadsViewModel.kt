@@ -5,8 +5,10 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.gooseco.myliftsquad.MyLiftSquadApp
 import com.gooseco.myliftsquad.data.PrCalculator
+import com.gooseco.myliftsquad.data.api.AthleteRef
 import com.gooseco.myliftsquad.data.api.OplApiService
 import com.gooseco.myliftsquad.data.api.ShareApiService
+import com.gooseco.myliftsquad.data.api.SharedSquad
 import com.gooseco.myliftsquad.data.db.Athlete
 import com.gooseco.myliftsquad.data.db.AthleteWithSquad
 import com.gooseco.myliftsquad.data.db.CompetitionEntry
@@ -20,6 +22,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -43,6 +46,15 @@ class SquadsViewModel(app: Application) : AndroidViewModel(app) {
 
     private val _importedSquadName = MutableSharedFlow<String>(replay = 0)
     val importedSquadName: SharedFlow<String> = _importedSquadName.asSharedFlow()
+
+    private val _shareLoading = MutableStateFlow(false)
+    val shareLoading: StateFlow<Boolean> = _shareLoading.asStateFlow()
+
+    private val _shareError = MutableStateFlow<String?>(null)
+    val shareError: StateFlow<String?> = _shareError.asStateFlow()
+
+    private val _shareCode = MutableSharedFlow<String>(replay = 0)
+    val shareCode: SharedFlow<String> = _shareCode.asSharedFlow()
 
     val squads: StateFlow<List<SquadWithCount>> = squadDao.getAllSquadsWithCount()
         .stateIn(
@@ -115,90 +127,29 @@ class SquadsViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             _importLoading.value = true
             _importError.value = null
-            _importProgress.value = "Fetching squad..."
+            _importProgress.value = "Looking up code..."
             try {
-                val shared = shareApiService.importSquad(trimmed)
-
-                // Check for duplicate name
-                if (squadDao.countByName(shared.name) > 0) {
-                    _importError.value = "You already have a squad named \"${shared.name}\""
-                    return@launch
-                }
-
-                val squad = Squad(name = shared.name)
-                val squadId = squadDao.insert(squad).toInt()
-                val total = shared.athletes.size
-
-                shared.athletes.forEachIndexed { index, ref ->
-                    _importProgress.value = "Fetching data for ${ref.name} (${index + 1} of $total)..."
-                    athleteDao.insert(
-                        Athlete(
-                            squadId = squadId,
-                            name = ref.name,
-                            slug = ref.slug,
-                            country = null,
-                            federation = null,
-                            bestSquat = null,
-                            bestBench = null,
-                            bestDeadlift = null,
-                            bestTotal = null,
-                            weightClass = null,
-                            equipment = null,
-                            lastCompDate = null,
-                            gender = null
-                        )
-                    )
-                    val athleteId = athleteDao.getAthleteBySlugAndSquad(ref.slug, squadId)?.id
-                    try {
-                        val results = apiService.fetchCompetitionHistory(ref.slug)
-                        if (results.isNotEmpty() && athleteId != null) {
-                            val entries = results.map { r ->
-                                CompetitionEntry(
-                                    athleteSlug = ref.slug,
-                                    date = r.date,
-                                    meetName = r.meetName,
-                                    federation = r.federation,
-                                    equipment = r.equipment,
-                                    division = r.division,
-                                    weightClassKg = r.weightClassKg,
-                                    bodyweightKg = r.bodyweightKg,
-                                    best3SquatKg = r.best3SquatKg,
-                                    best3BenchKg = r.best3BenchKg,
-                                    best3DeadliftKg = r.best3DeadliftKg,
-                                    totalKg = r.totalKg,
-                                    place = r.place,
-                                    dots = r.dots,
-                                    meetCountry = r.meetCountry,
-                                    meetTown = r.meetTown
-                                )
-                            }
-                            competitionEntryDao.insertAll(entries)
-                            val latest = competitionEntryDao.getLatestEntry(ref.slug)
-                            if (latest != null) {
-                                athleteDao.updateLastCompDetails(
-                                    athleteId = athleteId,
-                                    federation = latest.federation,
-                                    weightClass = latest.weightClassKg,
-                                    equipment = latest.equipment
-                                )
-                            }
-                            val prs = PrCalculator.calculate(entries)
-                            athleteDao.updatePRs(
-                                athleteId = athleteId,
-                                bestSquat = prs.bestSquat,
-                                bestBench = prs.bestBench,
-                                bestDeadlift = prs.bestDeadlift,
-                                bestTotal = prs.bestTotal
-                            )
-                        }
-                    } catch (_: Exception) {
-                        // History fetch failing for one athlete shouldn't abort the whole import
+                // Try bundle first, fall back to single squad
+                val bundle = shareApiService.tryImportBundle(trimmed)
+                if (bundle != null) {
+                    bundle.squads.forEachIndexed { index, shared ->
+                        _importProgress.value = "Importing \"${shared.name}\" (${index + 1} of ${bundle.squads.size})..."
+                        importSquadData(shared)
                     }
+                    val label = if (bundle.squads.size == 1) "\"${bundle.squads[0].name}\""
+                                else "${bundle.squads.size} squads"
+                    _importedSquadName.emit(label)
+                } else {
+                    _importProgress.value = "Fetching squad..."
+                    val shared = shareApiService.tryImportSquad(trimmed)
+                        ?: throw Exception("Code not found. Check and try again.")
+                    importSquadData(shared)
+                    _importedSquadName.emit("\"${shared.name}\"")
                 }
-
-                _importedSquadName.emit(shared.name)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                _importError.value = e.message ?: "Failed to import squad."
+                _importError.value = e.message ?: "Failed to import."
             } finally {
                 _importLoading.value = false
                 _importProgress.value = null
@@ -206,8 +157,112 @@ class SquadsViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    private suspend fun importSquadData(shared: SharedSquad) {
+        val name = uniqueSquadName(shared.name)
+        val squadId = squadDao.insert(Squad(name = name)).toInt()
+        val total = shared.athletes.size
+
+        shared.athletes.forEachIndexed { index, ref ->
+            _importProgress.value = "Fetching data for ${ref.name} (${index + 1} of $total)..."
+            athleteDao.insert(
+                Athlete(
+                    squadId = squadId, name = ref.name, slug = ref.slug,
+                    country = null, federation = null,
+                    bestSquat = null, bestBench = null, bestDeadlift = null, bestTotal = null,
+                    weightClass = null, equipment = null, lastCompDate = null, gender = null
+                )
+            )
+            val athleteId = athleteDao.getAthleteBySlugAndSquad(ref.slug, squadId)?.id
+            try {
+                val results = apiService.fetchCompetitionHistory(ref.slug)
+                if (results.isNotEmpty() && athleteId != null) {
+                    val entries = results.map { r ->
+                        CompetitionEntry(
+                            athleteSlug = ref.slug, date = r.date, meetName = r.meetName,
+                            federation = r.federation, equipment = r.equipment,
+                            division = r.division, weightClassKg = r.weightClassKg,
+                            bodyweightKg = r.bodyweightKg, best3SquatKg = r.best3SquatKg,
+                            best3BenchKg = r.best3BenchKg, best3DeadliftKg = r.best3DeadliftKg,
+                            totalKg = r.totalKg, place = r.place, dots = r.dots,
+                            meetCountry = r.meetCountry, meetTown = r.meetTown
+                        )
+                    }
+                    competitionEntryDao.insertAll(entries)
+                    val latest = competitionEntryDao.getLatestEntry(ref.slug)
+                    if (latest != null) {
+                        athleteDao.updateLastCompDetails(
+                            athleteId = athleteId,
+                            federation = latest.federation,
+                            weightClass = latest.weightClassKg,
+                            equipment = latest.equipment
+                        )
+                    }
+                    val prs = PrCalculator.calculate(entries)
+                    athleteDao.updatePRs(
+                        athleteId = athleteId,
+                        bestSquat = prs.bestSquat, bestBench = prs.bestBench,
+                        bestDeadlift = prs.bestDeadlift, bestTotal = prs.bestTotal
+                    )
+                }
+            } catch (_: Exception) {
+                // History fetch failing for one athlete shouldn't abort the whole import
+            }
+        }
+    }
+
+    private suspend fun uniqueSquadName(base: String): String {
+        if (squadDao.countByName(base) == 0) return base
+        var i = 2
+        while (i <= 99) {
+            val candidate = "$base ($i)"
+            if (squadDao.countByName(candidate) == 0) return candidate
+            i++
+        }
+        return base
+    }
+
     fun clearImportError() {
         _importError.value = null
+    }
+
+    fun shareSelected() {
+        val ids = _selectedSquadIds.value.toSet()
+        if (ids.isEmpty()) return
+        viewModelScope.launch {
+            _shareLoading.value = true
+            _shareError.value = null
+            try {
+                val squadsToShare = ids.mapNotNull { id ->
+                    val squad = squads.value.find { it.id == id } ?: return@mapNotNull null
+                    val athletes = athleteDao.getAthletesBySquadId(id)
+                        .filter { it.slug.isNotBlank() }
+                        .map { AthleteRef(name = it.name, slug = it.slug) }
+                    if (athletes.isEmpty()) return@mapNotNull null
+                    SharedSquad(name = squad.name, athletes = athletes)
+                }
+                if (squadsToShare.isEmpty()) {
+                    _shareError.value = "Selected squads have no athletes to share."
+                    return@launch
+                }
+                val code = if (squadsToShare.size == 1) {
+                    shareApiService.shareSquad(squadsToShare[0].name, squadsToShare[0].athletes)
+                } else {
+                    shareApiService.shareBundle(squadsToShare)
+                }
+                cancelSelection()
+                _shareCode.emit(code)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _shareError.value = e.message ?: "Failed to share squads."
+            } finally {
+                _shareLoading.value = false
+            }
+        }
+    }
+
+    fun clearShareError() {
+        _shareError.value = null
     }
 
     fun unfavourite(athlete: Athlete) {
