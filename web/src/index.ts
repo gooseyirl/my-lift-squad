@@ -201,6 +201,68 @@ interface SlugInfo {
   equipment: string;
 }
 
+function parseCsvRow(line: string): string[] {
+  const result: string[] = [];
+  let field = "";
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') {
+      if (inQuotes && line[i + 1] === '"') { field += '"'; i++; }
+      else inQuotes = !inQuotes;
+    } else if (ch === "," && !inQuotes) {
+      result.push(field); field = "";
+    } else {
+      field += ch;
+    }
+  }
+  result.push(field);
+  return result;
+}
+
+interface MeetEntry {
+  date: string; meet: string; federation: string; event: string;
+  equipment: string; division: string; bodyweight: string;
+  weightClass: string; squat: string; bench: string; deadlift: string;
+  total: string; place: string;
+}
+
+async function getLifterHistory(slug: string): Promise<{ name: string; meets: MeetEntry[] } | null> {
+  const res = await fetch(`${OPL_BASE}/liftercsv/${slug}`, { headers: { "User-Agent": UA } });
+  if (!res.ok) return null;
+  const text = await res.text();
+  const lines = text.trim().split("\n");
+  if (lines.length < 2) return null;
+  const headers = parseCsvRow(lines[0]);
+  const col = (name: string) => headers.indexOf(name);
+  const nameIdx = col("Name"), dateIdx = col("Date"), meetIdx = col("MeetName");
+  const fedIdx = col("Federation"), eventIdx = col("Event"), eqIdx = col("Equipment");
+  const divIdx = col("Division"), bwIdx = col("BodyweightKg"), wcIdx = col("WeightClassKg");
+  const sqIdx = col("Best3SquatKg"), bchIdx = col("Best3BenchKg"), dlIdx = col("Best3DeadliftKg");
+  const totalIdx = col("TotalKg"), placeIdx = col("Place");
+  const rows = lines.slice(1).map(parseCsvRow);
+  const name = nameIdx >= 0 ? (rows[0]?.[nameIdx] ?? slug) : slug;
+  const meets: MeetEntry[] = rows
+    .filter((r) => r.length > 1)
+    .map((r) => ({
+      date: dateIdx >= 0 ? r[dateIdx] : "",
+      meet: meetIdx >= 0 ? r[meetIdx] : "",
+      federation: fedIdx >= 0 ? r[fedIdx] : "",
+      event: eventIdx >= 0 ? r[eventIdx] : "",
+      equipment: eqIdx >= 0 ? r[eqIdx] : "",
+      division: divIdx >= 0 ? r[divIdx] : "",
+      bodyweight: bwIdx >= 0 ? r[bwIdx] : "",
+      weightClass: wcIdx >= 0 ? r[wcIdx] : "",
+      squat: sqIdx >= 0 ? r[sqIdx] : "",
+      bench: bchIdx >= 0 ? r[bchIdx] : "",
+      deadlift: dlIdx >= 0 ? r[dlIdx] : "",
+      total: totalIdx >= 0 ? r[totalIdx] : "",
+      place: placeIdx >= 0 ? r[placeIdx] : "",
+    }))
+    .sort((a, b) => b.date.localeCompare(a.date));
+  return { name, meets };
+}
+
 async function lookupOplSlug(slug: string): Promise<SlugInfo | null> {
   const res = await fetch(`${OPL_BASE}/liftercsv/${slug}`, { headers: { "User-Agent": UA } });
   if (!res.ok) return null;
@@ -339,6 +401,20 @@ export default {
         const info = await lookupOplSlug(slug);
         if (!info) return jsonRes({ error: "Lifter not found on OpenPowerlifting" }, 404, c);
         return jsonRes({ slug, ...info }, 200, c);
+      } catch (err) {
+        return jsonRes({ error: String(err) }, 502, c);
+      }
+    }
+
+    // ── GET /api/lifter?slug=<slug> ───────────────────────────────────────
+
+    if (url.pathname === "/api/lifter") {
+      const slug = (url.searchParams.get("slug") ?? "").trim().toLowerCase();
+      if (!slug) return jsonRes({ error: "Missing slug" }, 400, c);
+      try {
+        const history = await getLifterHistory(slug);
+        if (!history) return jsonRes({ error: "Lifter not found on OpenPowerlifting" }, 404, c);
+        return jsonRes(history, 200, c);
       } catch (err) {
         return jsonRes({ error: String(err) }, 502, c);
       }
