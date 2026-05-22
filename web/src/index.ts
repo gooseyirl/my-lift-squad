@@ -2,6 +2,17 @@ const COUCHDB_BASE = "https://couchdb.liftingcast.com";
 const OPL_BASE = "https://www.openpowerlifting.org/api";
 const UA = "myliftsquad-web/1.0";
 
+interface Env {
+  SHARES: KVNamespace;
+}
+
+function generateCode(length: number): string {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const array = new Uint8Array(length);
+  crypto.getRandomValues(array);
+  return Array.from(array, (b) => chars[b % chars.length]).join("");
+}
+
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -325,7 +336,7 @@ async function lookupOplSlug(slug: string): Promise<SlugInfo | null> {
 function cors(origin: string): HeadersInit {
   return {
     "Access-Control-Allow-Origin": origin,
-    "Access-Control-Allow-Methods": "GET, OPTIONS",
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type",
   };
 }
@@ -342,7 +353,7 @@ function jsonRes(data: unknown, status: number, extraHeaders: HeadersInit = {}):
 // ---------------------------------------------------------------------------
 
 export default {
-  async fetch(request: Request): Promise<Response> {
+  async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     const origin = request.headers.get("Origin") ?? "*";
     const c = cors(origin);
@@ -418,6 +429,27 @@ export default {
       } catch (err) {
         return jsonRes({ error: String(err) }, 502, c);
       }
+    }
+
+    // ── POST /api/share ───────────────────────────────────────────────────
+
+    if (url.pathname === "/api/share" && request.method === "POST") {
+      let body: { state?: unknown };
+      try { body = await request.json() as { state?: unknown }; } catch { return jsonRes({ error: "Invalid JSON" }, 400, c); }
+      if (!body.state) return jsonRes({ error: "Missing state" }, 400, c);
+      const code = generateCode(8);
+      await env.SHARES.put(`share:${code}`, JSON.stringify(body.state), { expirationTtl: 60 * 60 * 24 * 30 });
+      return jsonRes({ code }, 200, c);
+    }
+
+    // ── GET /api/share?code=<code> ────────────────────────────────────────
+
+    if (url.pathname === "/api/share") {
+      const code = (url.searchParams.get("code") ?? "").trim().toUpperCase();
+      if (!code) return jsonRes({ error: "Missing code" }, 400, c);
+      const data = await env.SHARES.get(`share:${code}`);
+      if (!data) return jsonRes({ error: "Share link not found or expired" }, 404, c);
+      return jsonRes({ state: JSON.parse(data) }, 200, c);
     }
 
     return jsonRes({ error: "Not found" }, 404);
