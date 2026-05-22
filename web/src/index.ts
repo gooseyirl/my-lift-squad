@@ -1,5 +1,6 @@
 const COUCHDB_BASE = "https://couchdb.liftingcast.com";
 const OPL_BASE = "https://www.openpowerlifting.org/api";
+const IPF_BASE = "https://www.openipf.org/api";
 const UA = "myliftsquad-web/1.0";
 
 interface Env {
@@ -132,10 +133,10 @@ async function getLiftingcastLifters(meetId: string, platformId?: string): Promi
 // OPL helpers
 // ---------------------------------------------------------------------------
 
-async function searchOplGender(name: string, genderPath: string): Promise<OplResult[]> {
+async function searchOplGender(name: string, genderPath: string, base: string): Promise<OplResult[]> {
   const q = encodeURIComponent(name);
   const searchRes = await fetch(
-    `${OPL_BASE}/search/rankings/${genderPath}?q=${q}&start=0&lang=en&units=kg`,
+    `${base}/search/rankings/${genderPath}?q=${q}&start=0&lang=en&units=kg`,
     { headers: { "User-Agent": UA } }
   );
   if (!searchRes.ok) return [];
@@ -145,7 +146,7 @@ async function searchOplGender(name: string, genderPath: string): Promise<OplRes
   if (nextIndex == null) return [];
 
   const ranksRes = await fetch(
-    `${OPL_BASE}/rankings/${genderPath}?start=${nextIndex}&end=${nextIndex + 24}&lang=en&units=kg`,
+    `${base}/rankings/${genderPath}?start=${nextIndex}&end=${nextIndex + 24}&lang=en&units=kg`,
     { headers: { "User-Agent": UA } }
   );
   if (!ranksRes.ok) return [];
@@ -185,15 +186,15 @@ async function searchOplGender(name: string, genderPath: string): Promise<OplRes
   return results.sort((a, b) => (order[a.confidence] ?? 3) - (order[b.confidence] ?? 3));
 }
 
-async function searchOpl(name: string, gender: string): Promise<OplResult[]> {
+async function searchOpl(name: string, gender: string, base: string): Promise<OplResult[]> {
   const isFemale =
     gender.toUpperCase() === "FEMALE" ||
     gender.toUpperCase() === "F" ||
     gender.toUpperCase() === "WOMEN";
   const primary = isFemale ? "women" : "men";
   const secondary = primary === "men" ? "women" : "men";
-  let results = await searchOplGender(name, primary);
-  if (!results.length) results = await searchOplGender(name, secondary);
+  let results = await searchOplGender(name, primary, base);
+  if (!results.length) results = await searchOplGender(name, secondary, base);
   return results.slice(0, 3);
 }
 
@@ -238,8 +239,8 @@ interface MeetEntry {
   total: string; place: string;
 }
 
-async function getLifterHistory(slug: string): Promise<{ name: string; meets: MeetEntry[] } | null> {
-  const res = await fetch(`${OPL_BASE}/liftercsv/${slug}`, { headers: { "User-Agent": UA } });
+async function getLifterHistory(slug: string, base: string): Promise<{ name: string; meets: MeetEntry[] } | null> {
+  const res = await fetch(`${base}/liftercsv/${slug}`, { headers: { "User-Agent": UA } });
   if (!res.ok) return null;
   const text = await res.text();
   const lines = text.trim().split("\n");
@@ -274,8 +275,8 @@ async function getLifterHistory(slug: string): Promise<{ name: string; meets: Me
   return { name, meets };
 }
 
-async function lookupOplSlug(slug: string): Promise<SlugInfo | null> {
-  const res = await fetch(`${OPL_BASE}/liftercsv/${slug}`, { headers: { "User-Agent": UA } });
+async function lookupOplSlug(slug: string, base: string): Promise<SlugInfo | null> {
+  const res = await fetch(`${base}/liftercsv/${slug}`, { headers: { "User-Agent": UA } });
   if (!res.ok) return null;
 
   const text = await res.text();
@@ -395,7 +396,9 @@ export default {
       if (!name.trim()) return jsonRes({ results: [] }, 200, c);
 
       try {
-        const results = await searchOpl(name.trim(), gender);
+        const source = url.searchParams.get("source") ?? "opl";
+        const base = source === "ipf" ? IPF_BASE : OPL_BASE;
+        const results = await searchOpl(name.trim(), gender, base);
         return jsonRes({ results }, 200, c);
       } catch {
         return jsonRes({ results: [] }, 200, c);
@@ -409,8 +412,10 @@ export default {
       if (!slug) return jsonRes({ error: "Missing slug" }, 400, c);
 
       try {
-        const info = await lookupOplSlug(slug);
-        if (!info) return jsonRes({ error: "Lifter not found on OpenPowerlifting" }, 404, c);
+        const src = url.searchParams.get("source") ?? "opl";
+        const lookupBase = src === "ipf" ? IPF_BASE : OPL_BASE;
+        const info = await lookupOplSlug(slug, lookupBase);
+        if (!info) return jsonRes({ error: "Lifter not found" }, 404, c);
         return jsonRes({ slug, ...info }, 200, c);
       } catch (err) {
         return jsonRes({ error: String(err) }, 502, c);
@@ -423,8 +428,10 @@ export default {
       const slug = (url.searchParams.get("slug") ?? "").trim().toLowerCase();
       if (!slug) return jsonRes({ error: "Missing slug" }, 400, c);
       try {
-        const history = await getLifterHistory(slug);
-        if (!history) return jsonRes({ error: "Lifter not found on OpenPowerlifting" }, 404, c);
+        const src = url.searchParams.get("source") ?? "opl";
+        const histBase = src === "ipf" ? IPF_BASE : OPL_BASE;
+        const history = await getLifterHistory(slug, histBase);
+        if (!history) return jsonRes({ error: "Lifter not found" }, 404, c);
         return jsonRes(history, 200, c);
       } catch (err) {
         return jsonRes({ error: String(err) }, 502, c);

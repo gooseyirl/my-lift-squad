@@ -39,6 +39,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.gooseco.myliftsquad.ui.viewmodel.BackupStatus
+import com.gooseco.myliftsquad.ui.viewmodel.OplSourcePreference
 import com.gooseco.myliftsquad.ui.viewmodel.SettingsViewModel
 import com.gooseco.myliftsquad.ui.viewmodel.ThemePreference
 
@@ -51,6 +52,7 @@ fun SettingsScreen(
     val exportStatus by viewModel.exportStatus.collectAsState()
     val restoreStatus by viewModel.restoreStatus.collectAsState()
     val theme by viewModel.theme.collectAsState()
+    val oplSource by viewModel.oplSource.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     var showRestoreConfirm by remember { mutableStateOf(false) }
     var pendingRestoreUri by remember { mutableStateOf<android.net.Uri?>(null) }
@@ -145,6 +147,36 @@ fun SettingsScreen(
                     )
                 }
             }
+
+            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+
+            SettingsSectionHeader("Data Source")
+
+            val sourceOptions = listOf(
+                OplSourcePreference.OPL to "OpenPowerlifting",
+                OplSourcePreference.IPF to "OpenIPF"
+            )
+            SingleChoiceSegmentedButtonRow(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp)
+            ) {
+                sourceOptions.forEachIndexed { index, (value, label) ->
+                    SegmentedButton(
+                        selected = oplSource == value,
+                        onClick = { viewModel.setOplSource(value) },
+                        shape = SegmentedButtonDefaults.itemShape(index = index, count = sourceOptions.size),
+                        label = { Text(label) }
+                    )
+                }
+            }
+
+            Text(
+                text = "OpenIPF only includes IPF-affiliated competitions.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+            )
 
             HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
 

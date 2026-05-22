@@ -44,11 +44,34 @@ object ThemePreference {
     }
 }
 
+object OplSourcePreference {
+    const val OPL = "opl"
+    const val IPF = "ipf"
+    private const val KEY = "opl_source"
+    private const val PREFS = "myliftsquad_prefs"
+
+    private val _flow = MutableStateFlow(OPL)
+    val flow: StateFlow<String> = _flow
+
+    fun load(context: Context) {
+        _flow.value = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .getString(KEY, OPL) ?: OPL
+    }
+
+    fun save(context: Context, value: String) {
+        _flow.value = value
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .edit().putString(KEY, value).apply()
+    }
+}
+
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
 
     val theme: StateFlow<String> = ThemePreference.flow
+    val oplSource: StateFlow<String> = OplSourcePreference.flow
 
     fun setTheme(value: String) = ThemePreference.save(getApplication(), value)
+    fun setOplSource(value: String) = OplSourcePreference.save(getApplication(), value)
 
     private val db = (application as MyLiftSquadApp).database
     private val gson = Gson()

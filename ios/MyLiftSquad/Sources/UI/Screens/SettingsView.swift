@@ -7,6 +7,7 @@ struct SettingsView: View {
     @State private var viewModel: SettingsViewModel?
     @State private var showFilePicker = false
     @AppStorage("theme_preference") private var themePreference: String = "system"
+    @AppStorage("opl_source") private var oplSource: String = "opl"
 
     var body: some View {
         Group {
@@ -37,6 +38,17 @@ struct SettingsView: View {
                 .pickerStyle(.segmented)
             }
 
+            Section("Data Source") {
+                Picker("Data Source", selection: $oplSource) {
+                    Text("OpenPowerlifting").tag("opl")
+                    Text("OpenIPF (IPF only)").tag("ipf")
+                }
+                .pickerStyle(.segmented)
+                Text("OpenIPF only includes IPF-affiliated competitions.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+
             Section("Data") {
                 Button {
                     vm.exportBackup()
@@ -62,7 +74,7 @@ struct SettingsView: View {
                 HStack {
                     Text("Data Source")
                     Spacer()
-                    Text("OpenPowerlifting")
+                    Text(oplSource == "ipf" ? "OpenIPF" : "OpenPowerlifting")
                         .foregroundColor(.secondary)
                 }
             }

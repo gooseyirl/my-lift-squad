@@ -9,16 +9,26 @@ struct SearchPage {
 
 actor OplApiService {
     static let shared = OplApiService()
-    private let baseURL: String
+    private var baseURLOverride: String?
     private let session: URLSession
 
+    private var baseURL: String {
+        if let override = baseURLOverride { return override }
+        let source = UserDefaults.standard.string(forKey: "opl_source") ?? "opl"
+        return source == "ipf" ? "https://www.openipf.org/api" : "https://www.openpowerlifting.org/api"
+    }
+
+    nonisolated var athleteProfileBaseURL: String {
+        let source = UserDefaults.standard.string(forKey: "opl_source") ?? "opl"
+        return source == "ipf" ? "https://www.openipf.org/u" : "https://www.openpowerlifting.org/u"
+    }
+
     private init() {
-        self.baseURL = "https://www.openpowerlifting.org/api"
         self.session = .shared
     }
 
     init(baseURL: String, session: URLSession) {
-        self.baseURL = baseURL
+        self.baseURLOverride = baseURL
         self.session = session
     }
 

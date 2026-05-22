@@ -2,6 +2,7 @@ package com.gooseco.myliftsquad.data.api
 
 import com.google.gson.JsonArray
 import com.google.gson.JsonParser
+import com.gooseco.myliftsquad.ui.viewmodel.OplSourcePreference
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -19,12 +20,24 @@ data class SearchPage(
 }
 
 class OplApiService(
-    private val baseUrl: String = "https://www.openpowerlifting.org/api",
+    private val baseUrlOverride: String? = null,
     private val client: OkHttpClient = OkHttpClient.Builder()
         .connectTimeout(15, TimeUnit.SECONDS)
         .readTimeout(15, TimeUnit.SECONDS)
         .build()
 ) {
+    private val baseUrl: String
+        get() = baseUrlOverride ?: if (OplSourcePreference.flow.value == OplSourcePreference.IPF)
+            "https://www.openipf.org/api"
+        else
+            "https://www.openpowerlifting.org/api"
+
+    val athleteProfileBaseURL: String
+        get() = if (OplSourcePreference.flow.value == OplSourcePreference.IPF)
+            "https://www.openipf.org/u"
+        else
+            "https://www.openpowerlifting.org/u"
+
 
     /**
      * Search both men and women paths in parallel, combine and deduplicate by slug.

@@ -26,6 +26,7 @@ import com.gooseco.myliftsquad.ui.SquadDetailScreen
 import com.gooseco.myliftsquad.ui.SquadsScreen
 import com.gooseco.myliftsquad.ui.theme.MyLiftSquadTheme
 import com.gooseco.myliftsquad.ui.viewmodel.SquadDetailViewModel
+import com.gooseco.myliftsquad.ui.viewmodel.OplSourcePreference
 import com.gooseco.myliftsquad.ui.viewmodel.ThemePreference
 
 class MainActivity : ComponentActivity() {
@@ -40,6 +41,7 @@ class MainActivity : ComponentActivity() {
         val prefs = getSharedPreferences("myliftsquad_prefs", Context.MODE_PRIVATE)
         val quote = getNextQuote(prefs)
         ThemePreference.load(this)
+        OplSourcePreference.load(this)
 
         isDonatedState.value = BillingManager.isDonated(this)
         billingManager = BillingManager(this) {

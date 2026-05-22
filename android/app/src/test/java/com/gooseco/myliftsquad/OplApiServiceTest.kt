@@ -20,7 +20,7 @@ class OplApiServiceTest {
     fun setUp() {
         server = MockWebServer()
         server.start()
-        service = OplApiService(baseUrl = server.url("").toString().trimEnd('/'))
+        service = OplApiService(baseUrlOverride = server.url("").toString().trimEnd('/'))
     }
 
     @After
