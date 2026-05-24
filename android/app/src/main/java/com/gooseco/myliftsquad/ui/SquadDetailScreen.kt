@@ -60,6 +60,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalClipboardManager
@@ -75,6 +76,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.gooseco.myliftsquad.data.db.Athlete
 import com.gooseco.myliftsquad.data.db.CompetitionEntry
 import com.gooseco.myliftsquad.ui.viewmodel.AthleteSortOption
+import com.gooseco.myliftsquad.ui.viewmodel.OplSourcePreference
 import com.gooseco.myliftsquad.ui.viewmodel.SquadDetailViewModel
 
 private fun formatKg(value: Double): String =
@@ -590,6 +592,11 @@ internal fun AthleteDetailSheet(
     historyError: String?,
     onRefresh: () -> Unit
 ) {
+    val oplSource by OplSourcePreference.flow.collectAsState()
+    val isIpf = oplSource == OplSourcePreference.IPF
+    val sourceColor = if (isIpf) Color(0xFFFDB93E) else Color(0xFFFB3640)
+    val sourceLabel = if (isIpf) "OpenIPF" else "OpenPowerlifting"
+
     LazyColumn(
         modifier = Modifier.fillMaxWidth(),
         contentPadding = PaddingValues(bottom = 32.dp)
@@ -633,6 +640,16 @@ internal fun AthleteDetailSheet(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
+                        Spacer(Modifier.height(6.dp))
+                        Text(
+                            text = sourceLabel,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color = sourceColor,
+                            modifier = Modifier
+                                .background(sourceColor.copy(alpha = 0.15f), shape = RoundedCornerShape(50))
+                                .padding(horizontal = 8.dp, vertical = 3.dp)
+                        )
                     }
                     IconButton(
                         onClick = onRefresh,

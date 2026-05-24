@@ -5,6 +5,16 @@ struct AthleteDetailSheet: View {
     let history: [CompetitionResult]
     let isLoading: Bool
     var onRefresh: (() -> Void)? = nil
+    @AppStorage("opl_source") private var oplSource: String = "opl"
+
+    private var sourceColor: Color {
+        oplSource == "ipf"
+            ? Color(red: 253/255, green: 185/255, blue: 62/255)
+            : Color(red: 251/255, green: 54/255, blue: 64/255)
+    }
+    private var sourceLabel: String {
+        oplSource == "ipf" ? "OpenIPF" : "OpenPowerlifting"
+    }
 
     var body: some View {
         NavigationStack {
@@ -31,6 +41,12 @@ struct AthleteDetailSheet: View {
                         if !athlete.equipment.isEmpty {
                             InfoChip(text: athlete.equipment)
                         }
+
+                        InfoChip(
+                            text: sourceLabel,
+                            backgroundColor: sourceColor.opacity(0.15),
+                            textColor: sourceColor
+                        )
                     }
                     .padding(.vertical, 4)
                 }
@@ -104,13 +120,16 @@ struct LiftStatView: View {
 
 struct InfoChip: View {
     let text: String
+    var backgroundColor: Color = Color(.systemGray5)
+    var textColor: Color = .primary
 
     var body: some View {
         Text(text)
             .font(.caption)
+            .foregroundColor(textColor)
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
-            .background(Color(.systemGray5))
+            .background(backgroundColor)
             .clipShape(Capsule())
     }
 }
