@@ -23,6 +23,8 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.util.Collections
+import java.util.concurrent.ConcurrentHashMap
 
 enum class AthleteSortOption(val label: String) {
     TOTAL_DESC("Total ↓"),
@@ -117,6 +119,10 @@ class SquadDetailViewModel(app: Application) : AndroidViewModel(app) {
     private val _historyError = MutableStateFlow<String?>(null)
     val historyError: StateFlow<String?> = _historyError
 
+    /** Tracks slugs for which a fetch is currently in-flight to prevent duplicate concurrent fetches. */
+    private val activeSlugFetches: MutableSet<String> =
+        Collections.newSetFromMap(ConcurrentHashMap())
+
     private val _refreshingAll = MutableStateFlow(false)
     val refreshingAll: StateFlow<Boolean> = _refreshingAll
 
@@ -187,10 +193,17 @@ class SquadDetailViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private suspend fun fetchHistory(slug: String, force: Boolean = false) {
+        // Prevent duplicate concurrent fetches for the same slug.
+        // A forced refresh (user tapped ↺) always proceeds; a background fetch is skipped
+        // if another fetch for the same slug is already in-flight.
+        if (!force && !activeSlugFetches.add(slug)) return
+        if (force) activeSlugFetches.add(slug)
+
         _historyLoading.value = true
         _historyError.value = null
         try {
-            if (force) competitionEntryDao.deleteForAthlete(slug)
+            // Always delete before inserting so stale or duplicate rows never accumulate.
+            competitionEntryDao.deleteForAthlete(slug)
             val results = apiService.fetchCompetitionHistory(slug)
             if (results.isEmpty()) {
                 _historyError.value = "No competition data found."
@@ -211,6 +224,7 @@ class SquadDetailViewModel(app: Application) : AndroidViewModel(app) {
                         totalKg = r.totalKg,
                         place = r.place,
                         dots = r.dots,
+                        glPoints = r.glPoints,
                         meetCountry = r.meetCountry,
                         meetTown = r.meetTown
                     )
@@ -242,13 +256,15 @@ class SquadDetailViewModel(app: Application) : AndroidViewModel(app) {
                         bestSquat = prs.bestSquat,
                         bestBench = prs.bestBench,
                         bestDeadlift = prs.bestDeadlift,
-                        bestTotal = prs.bestTotal
+                        bestTotal = prs.bestTotal,
+                        bestGlPoints = prs.bestGlPoints
                     )
                 }
             }
         } catch (e: Exception) {
             _historyError.value = "Failed to load competition history."
         } finally {
+            activeSlugFetches.remove(slug)
             _historyLoading.value = false
         }
     }
@@ -326,6 +342,7 @@ class SquadDetailViewModel(app: Application) : AndroidViewModel(app) {
                     bestBench = oplAthlete.bestBench,
                     bestDeadlift = oplAthlete.bestDeadlift,
                     bestTotal = oplAthlete.bestTotal,
+                    bestGlPoints = null,
                     weightClass = oplAthlete.weightClass,
                     equipment = oplAthlete.equipment,
                     lastCompDate = oplAthlete.lastCompDate,

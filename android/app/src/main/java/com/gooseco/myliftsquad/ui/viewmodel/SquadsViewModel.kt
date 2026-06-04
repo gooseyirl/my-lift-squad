@@ -169,6 +169,7 @@ class SquadsViewModel(app: Application) : AndroidViewModel(app) {
                     squadId = squadId, name = ref.name, slug = ref.slug,
                     country = null, federation = null,
                     bestSquat = null, bestBench = null, bestDeadlift = null, bestTotal = null,
+                    bestGlPoints = null,
                     weightClass = null, equipment = null, lastCompDate = null, gender = null
                 )
             )
@@ -184,6 +185,7 @@ class SquadsViewModel(app: Application) : AndroidViewModel(app) {
                             bodyweightKg = r.bodyweightKg, best3SquatKg = r.best3SquatKg,
                             best3BenchKg = r.best3BenchKg, best3DeadliftKg = r.best3DeadliftKg,
                             totalKg = r.totalKg, place = r.place, dots = r.dots,
+                            glPoints = r.glPoints,
                             meetCountry = r.meetCountry, meetTown = r.meetTown
                         )
                     }
@@ -201,7 +203,8 @@ class SquadsViewModel(app: Application) : AndroidViewModel(app) {
                     athleteDao.updatePRs(
                         athleteId = athleteId,
                         bestSquat = prs.bestSquat, bestBench = prs.bestBench,
-                        bestDeadlift = prs.bestDeadlift, bestTotal = prs.bestTotal
+                        bestDeadlift = prs.bestDeadlift, bestTotal = prs.bestTotal,
+                        bestGlPoints = prs.bestGlPoints
                     )
                 }
             } catch (_: Exception) {

@@ -39,6 +39,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.gooseco.myliftsquad.ui.viewmodel.BackupStatus
+import com.gooseco.myliftsquad.ui.viewmodel.MetricPreference
 import com.gooseco.myliftsquad.ui.viewmodel.OplSourcePreference
 import com.gooseco.myliftsquad.ui.viewmodel.SettingsViewModel
 import com.gooseco.myliftsquad.ui.viewmodel.ThemePreference
@@ -53,6 +54,7 @@ fun SettingsScreen(
     val restoreStatus by viewModel.restoreStatus.collectAsState()
     val theme by viewModel.theme.collectAsState()
     val oplSource by viewModel.oplSource.collectAsState()
+    val metric by viewModel.metric.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     var showRestoreConfirm by remember { mutableStateOf(false) }
     var pendingRestoreUri by remember { mutableStateOf<android.net.Uri?>(null) }
@@ -173,6 +175,36 @@ fun SettingsScreen(
 
             Text(
                 text = "OpenIPF only includes IPF-affiliated competitions.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+            )
+
+            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+
+            SettingsSectionHeader("Display Metric")
+
+            val metricOptions = listOf(
+                MetricPreference.TOTAL to "Total",
+                MetricPreference.GL to "GL Points"
+            )
+            SingleChoiceSegmentedButtonRow(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp)
+            ) {
+                metricOptions.forEachIndexed { index, (value, label) ->
+                    SegmentedButton(
+                        selected = metric == value,
+                        onClick = { viewModel.setMetric(value) },
+                        shape = SegmentedButtonDefaults.itemShape(index = index, count = metricOptions.size),
+                        label = { Text(label) }
+                    )
+                }
+            }
+
+            Text(
+                text = "Controls which score is shown prominently on athlete cards and history.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)

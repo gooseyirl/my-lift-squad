@@ -29,6 +29,7 @@ data class Athlete(
     val bestBench: Double?,
     val bestDeadlift: Double?,
     val bestTotal: Double?,
+    val bestGlPoints: Double?,
     val weightClass: String?,
     val equipment: String?,
     val lastCompDate: String?,

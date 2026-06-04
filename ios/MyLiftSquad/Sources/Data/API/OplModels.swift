@@ -30,6 +30,7 @@ struct CompetitionResult: Identifiable {
     let totalKg: Double
     let place: String
     let dots: Double
+    let glPoints: Double
     let meetCountry: String
     let meetTown: String
 }

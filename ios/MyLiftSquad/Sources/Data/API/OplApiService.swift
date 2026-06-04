@@ -173,6 +173,7 @@ actor OplApiService {
                 totalKg:       f.count > 25 ? Double(f[25]) ?? 0 : 0,
                 place: place,
                 dots:          f.count > 27 ? Double(f[27]) ?? 0 : 0,
+                glPoints:      f.count > 30 ? Double(f[30]) ?? 0 : 0,
                 meetCountry:   f.count > 37 ? f[37] : "",
                 meetTown:      f.count > 39 ? f[39] : ""
             )

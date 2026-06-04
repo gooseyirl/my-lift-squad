@@ -128,6 +128,8 @@ final class SearchViewModel {
     }
 
     private func fetchHistoryAfterAdd(slug: String) async {
+        guard HistoryFetchGuard.shared.acquire(slug) else { return }
+        defer { HistoryFetchGuard.shared.release(slug) }
         guard let (results, _) = try? await OplApiService.shared.fetchHistory(slug: slug) else { return }
 
         // Persist competition entries

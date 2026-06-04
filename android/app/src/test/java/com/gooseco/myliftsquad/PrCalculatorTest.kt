@@ -29,6 +29,7 @@ class PrCalculatorTest {
         totalKg = total,
         place = place,
         dots = null,
+        glPoints = null,
         meetCountry = "GBR",
         meetTown = null
     )

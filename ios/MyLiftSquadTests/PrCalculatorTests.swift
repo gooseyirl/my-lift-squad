@@ -24,6 +24,7 @@ final class PrCalculatorTests: XCTestCase {
             totalKg: total,
             place: place,
             dots: 0,
+            glPoints: 0,
             meetCountry: "GBR",
             meetTown: ""
         )

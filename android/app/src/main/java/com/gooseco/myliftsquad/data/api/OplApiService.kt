@@ -122,6 +122,7 @@ class OplApiService(
                         totalKg = f.getOrNull(25)?.toDoubleOrNull()?.takeIf { it > 0 },
                         place = f.getOrNull(26)?.takeIf { it.isNotEmpty() },
                         dots = f.getOrNull(27)?.toDoubleOrNull(),
+                        glPoints = f.getOrNull(30)?.toDoubleOrNull(),
                         meetCountry = f.getOrNull(37)?.takeIf { it.isNotEmpty() },
                         meetTown = f.getOrNull(39)?.takeIf { it.isNotEmpty() }
                     )

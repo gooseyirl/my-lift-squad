@@ -296,6 +296,9 @@ struct ShareCodeSheet: View {
 
 struct AthleteRowView: View {
     let athlete: Athlete
+    @AppStorage("metric_preference") private var metricPreference: String = "total"
+
+    private var glIsActive: Bool { metricPreference == "gl" }
 
     var body: some View {
         HStack(spacing: 12) {
@@ -310,7 +313,6 @@ struct AthleteRowView: View {
                             .font(.caption)
                     }
                 }
-                // Federation in accent color, followed by gender/weight class/equipment in secondary
                 let metaParts = [athlete.federation, athlete.gender, athlete.weightClass, athlete.equipment]
                     .filter { !$0.isEmpty }
                 if !metaParts.isEmpty {
@@ -328,11 +330,20 @@ struct AthleteRowView: View {
                 SBDText(squatKg: athlete.bestSquatKg, benchKg: athlete.bestBenchKg, deadliftKg: athlete.bestDeadliftKg)
             }
             Spacer()
-            if athlete.bestTotalKg > 0 {
-                Text("\(Int(athlete.bestTotalKg)) kg")
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.accentColor)
+            VStack(alignment: .trailing, spacing: 2) {
+                let primaryVal = glIsActive ? athlete.bestGlPoints : athlete.bestTotalKg
+                let secondaryVal = glIsActive ? athlete.bestTotalKg : athlete.bestGlPoints
+                if primaryVal > 0 {
+                    Text(glIsActive ? String(format: "%.2f pts", primaryVal) : "\(Int(primaryVal)) kg")
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.accentColor)
+                }
+                if secondaryVal > 0 {
+                    Text(glIsActive ? "\(Int(secondaryVal)) kg" : String(format: "%.2f pts", secondaryVal))
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
             }
         }
         .padding(.vertical, 4)

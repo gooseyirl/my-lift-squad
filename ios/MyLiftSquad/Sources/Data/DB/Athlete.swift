@@ -12,6 +12,7 @@ final class Athlete {
     var bestBenchKg: Double
     var bestDeadliftKg: Double
     var bestTotalKg: Double
+    var bestGlPoints: Double
     var weightClass: String
     var equipment: String
     var lastCompDate: String
@@ -28,6 +29,7 @@ final class Athlete {
         bestBenchKg: Double = 0,
         bestDeadliftKg: Double = 0,
         bestTotalKg: Double = 0,
+        bestGlPoints: Double = 0,
         weightClass: String = "",
         equipment: String = "",
         lastCompDate: String = "",
@@ -43,6 +45,7 @@ final class Athlete {
         self.bestBenchKg = bestBenchKg
         self.bestDeadliftKg = bestDeadliftKg
         self.bestTotalKg = bestTotalKg
+        self.bestGlPoints = bestGlPoints
         self.weightClass = weightClass
         self.equipment = equipment
         self.lastCompDate = lastCompDate

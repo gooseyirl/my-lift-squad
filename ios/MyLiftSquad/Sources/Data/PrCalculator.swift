@@ -9,6 +9,7 @@ enum PrCalculator {
         let bestBench: Double
         let bestDeadlift: Double
         let bestTotal: Double
+        let bestGlPoints: Double
     }
 
     static func calculate(from results: [CompetitionResult]) -> Result {
@@ -17,7 +18,8 @@ enum PrCalculator {
             bestSquat: valid.map(\.best3SquatKg).filter { $0 > 0 }.max() ?? 0,
             bestBench: valid.map(\.best3BenchKg).filter { $0 > 0 }.max() ?? 0,
             bestDeadlift: valid.map(\.best3DeadliftKg).filter { $0 > 0 }.max() ?? 0,
-            bestTotal: valid.map(\.totalKg).filter { $0 > 0 }.max() ?? 0
+            bestTotal: valid.map(\.totalKg).filter { $0 > 0 }.max() ?? 0,
+            bestGlPoints: valid.map(\.glPoints).filter { $0 > 0 }.max() ?? 0
         )
     }
 }

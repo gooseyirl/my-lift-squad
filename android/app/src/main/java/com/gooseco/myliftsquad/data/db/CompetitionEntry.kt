@@ -25,6 +25,7 @@ data class CompetitionEntry(
     val totalKg: Double?,
     val place: String?,
     val dots: Double?,
+    val glPoints: Double?,
     val meetCountry: String?,
     val meetTown: String?
 )

@@ -6,6 +6,9 @@ struct AthleteDetailSheet: View {
     let isLoading: Bool
     var onRefresh: (() -> Void)? = nil
     @AppStorage("opl_source") private var oplSource: String = "opl"
+    @AppStorage("metric_preference") private var metricPreference: String = "total"
+
+    private var glIsActive: Bool { metricPreference == "gl" }
 
     private var sourceColor: Color {
         oplSource == "ipf"
@@ -57,7 +60,11 @@ struct AthleteDetailSheet: View {
                         LiftStatView(label: "Squat", value: athlete.bestSquatKg)
                         LiftStatView(label: "Bench", value: athlete.bestBenchKg)
                         LiftStatView(label: "Deadlift", value: athlete.bestDeadliftKg)
-                        LiftStatView(label: "Total", value: athlete.bestTotalKg)
+                        LiftStatView(label: "Total", value: athlete.bestTotalKg, highlight: !glIsActive)
+                        if athlete.bestGlPoints > 0 {
+                            LiftStatView(label: "GL Pts", value: athlete.bestGlPoints,
+                                         highlight: glIsActive, isPoints: true)
+                        }
                     }
                 }
 
@@ -103,13 +110,20 @@ struct AthleteDetailSheet: View {
 struct LiftStatView: View {
     let label: String
     let value: Double
+    var highlight: Bool = false
+    var isPoints: Bool = false
+
+    private var displayText: String {
+        guard value > 0 else { return "—" }
+        return isPoints ? String(format: "%.2f", value) : "\(Int(value))"
+    }
 
     var body: some View {
         VStack(spacing: 4) {
-            Text(value > 0 ? "\(Int(value))" : "—")
+            Text(displayText)
                 .font(.title3)
                 .fontWeight(.bold)
-                .foregroundColor(value > 0 ? .primary : .secondary)
+                .foregroundColor(value > 0 ? (highlight ? .accentColor : .primary) : .secondary)
             Text(label)
                 .font(.caption2)
                 .foregroundColor(.secondary)
@@ -136,6 +150,9 @@ struct InfoChip: View {
 
 struct CompetitionRowView: View {
     let result: CompetitionResult
+    @AppStorage("metric_preference") private var metricPreference: String = "total"
+
+    private var glIsActive: Bool { metricPreference == "gl" }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -188,7 +205,15 @@ struct CompetitionRowView: View {
                 if result.totalKg > 0 {
                     Text("Total \(Int(result.totalKg)) kg")
                         .font(.caption)
-                        .fontWeight(.medium)
+                        .fontWeight(glIsActive ? .regular : .semibold)
+                        .foregroundColor(glIsActive ? .secondary : .primary)
+                        .padding(.trailing, 8)
+                }
+                if result.glPoints > 0 {
+                    Text(String(format: "GL %.2f", result.glPoints))
+                        .font(.caption)
+                        .fontWeight(glIsActive ? .semibold : .regular)
+                        .foregroundColor(glIsActive ? .primary : .secondary)
                 }
             }
         }

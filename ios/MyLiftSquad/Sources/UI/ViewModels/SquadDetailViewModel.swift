@@ -89,6 +89,7 @@ final class SquadDetailViewModel {
                 totalKg: entry.totalKg,
                 place: entry.place,
                 dots: entry.dots,
+                glPoints: entry.glPoints,
                 meetCountry: entry.meetCountry,
                 meetTown: entry.meetTown
             )
@@ -96,10 +97,15 @@ final class SquadDetailViewModel {
     }
 
     private func fetchFreshHistory(for athlete: Athlete) async {
-        isLoadingHistory = true
-        defer { isLoadingHistory = false }
-
         let slug = athlete.slug
+        guard HistoryFetchGuard.shared.acquire(slug) else { return }
+
+        isLoadingHistory = true
+        defer {
+            HistoryFetchGuard.shared.release(slug)
+            isLoadingHistory = false
+        }
+
         do {
             let (fresh, _) = try await OplApiService.shared.fetchHistory(slug: slug)
 
@@ -126,6 +132,7 @@ final class SquadDetailViewModel {
                     totalKg: result.totalKg,
                     place: result.place,
                     dots: result.dots,
+                    glPoints: result.glPoints,
                     meetCountry: result.meetCountry,
                     meetTown: result.meetTown
                 )
@@ -147,6 +154,7 @@ final class SquadDetailViewModel {
             athlete.bestBenchKg = prs.bestBench
             athlete.bestDeadliftKg = prs.bestDeadlift
             athlete.bestTotalKg = prs.bestTotal
+            athlete.bestGlPoints = prs.bestGlPoints
 
             try? modelContext.save()
         } catch {

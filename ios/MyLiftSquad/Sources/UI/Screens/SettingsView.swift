@@ -8,6 +8,7 @@ struct SettingsView: View {
     @State private var showFilePicker = false
     @AppStorage("theme_preference") private var themePreference: String = "system"
     @AppStorage("opl_source") private var oplSource: String = "opl"
+    @AppStorage("metric_preference") private var metricPreference: String = "total"
 
     var body: some View {
         Group {
@@ -45,6 +46,17 @@ struct SettingsView: View {
                 }
                 .pickerStyle(.segmented)
                 Text("OpenIPF only includes IPF-affiliated competitions.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+
+            Section("Display Metric") {
+                Picker("Display Metric", selection: $metricPreference) {
+                    Text("Total").tag("total")
+                    Text("GL Points").tag("gl")
+                }
+                .pickerStyle(.segmented)
+                Text("Controls which score is shown prominently on athlete cards and history.")
                     .font(.caption)
                     .foregroundColor(.secondary)
             }

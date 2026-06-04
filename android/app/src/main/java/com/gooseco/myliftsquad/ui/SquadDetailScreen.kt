@@ -77,6 +77,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.gooseco.myliftsquad.data.db.Athlete
 import com.gooseco.myliftsquad.data.db.CompetitionEntry
 import com.gooseco.myliftsquad.ui.viewmodel.AthleteSortOption
+import com.gooseco.myliftsquad.ui.viewmodel.MetricPreference
 import com.gooseco.myliftsquad.ui.viewmodel.OplSourcePreference
 import com.gooseco.myliftsquad.ui.viewmodel.SquadDetailViewModel
 
@@ -459,6 +460,8 @@ fun SquadDetailScreen(
     }
 }
 
+private fun formatPoints(value: Double): String = "${"%.2f".format(value)} pts"
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun AthleteCard(
@@ -466,6 +469,7 @@ private fun AthleteCard(
     onClick: () -> Unit,
     onLongPress: () -> Unit
 ) {
+    val metric by MetricPreference.flow.collectAsState()
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -546,16 +550,28 @@ private fun AthleteCard(
                             modifier = Modifier.size(16.dp)
                         )
                     }
-                    athlete.bestTotal?.let { total ->
-                        Badge(
-                            containerColor = MaterialTheme.colorScheme.primaryContainer,
-                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                        ) {
+                    val glIsActive = metric == MetricPreference.GL
+                    Column(horizontalAlignment = Alignment.End) {
+                        val primaryTotal = if (!glIsActive) athlete.bestTotal else athlete.bestGlPoints
+                        val secondaryTotal = if (!glIsActive) athlete.bestGlPoints else athlete.bestTotal
+                        primaryTotal?.let { v ->
+                            Badge(
+                                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                            ) {
+                                Text(
+                                    text = if (!glIsActive) formatKg(v) else formatPoints(v),
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                        secondaryTotal?.let { v ->
                             Text(
-                                text = formatKg(total),
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Bold
+                                text = if (glIsActive) formatKg(v) else formatPoints(v),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
@@ -682,6 +698,8 @@ internal fun AthleteDetailSheet(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(Modifier.height(12.dp))
+                val metricInDetail by MetricPreference.flow.collectAsState()
+                val glIsActiveInDetail = metricInDetail == MetricPreference.GL
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceEvenly
@@ -689,7 +707,11 @@ internal fun AthleteDetailSheet(
                     LiftStat(label = "Squat", value = athlete.bestSquat)
                     LiftStat(label = "Bench", value = athlete.bestBench)
                     LiftStat(label = "Deadlift", value = athlete.bestDeadlift)
-                    LiftStat(label = "Total", value = athlete.bestTotal, highlight = true)
+                    LiftStat(label = "Total", value = athlete.bestTotal, highlight = !glIsActiveInDetail)
+                    athlete.bestGlPoints?.let { gl ->
+                        LiftStat(label = "GL Pts", value = gl, highlight = glIsActiveInDetail,
+                            formatter = { v -> "${"%.2f".format(v)}" })
+                    }
                 }
 
                 athlete.lastCompDate?.let { date ->
@@ -764,6 +786,8 @@ internal fun AthleteDetailSheet(
 
 @Composable
 private fun CompetitionEntryRow(entry: CompetitionEntry) {
+    val metric by MetricPreference.flow.collectAsState()
+    val glIsActive = metric == MetricPreference.GL
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -828,16 +852,26 @@ private fun CompetitionEntryRow(entry: CompetitionEntry) {
             LiftStat(label = "SQ", value = entry.best3SquatKg)
             LiftStat(label = "BP", value = entry.best3BenchKg)
             LiftStat(label = "DL", value = entry.best3DeadliftKg)
-            LiftStat(label = "Total", value = entry.totalKg, highlight = true)
+            LiftStat(label = "Total", value = entry.totalKg, highlight = !glIsActive,
+                formatter = ::formatKg)
+            entry.glPoints?.let { gl ->
+                LiftStat(label = "GL Pts", value = gl, highlight = glIsActive,
+                    formatter = { v -> "${"%.2f".format(v)}" })
+            }
         }
     }
 }
 
 @Composable
-private fun LiftStat(label: String, value: Double?, highlight: Boolean = false) {
+private fun LiftStat(
+    label: String,
+    value: Double?,
+    highlight: Boolean = false,
+    formatter: (Double) -> String = ::formatKg
+) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
-            text = if (value != null) formatKg(value) else "—",
+            text = if (value != null) formatter(value) else "—",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             color = if (highlight) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface

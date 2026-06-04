@@ -65,13 +65,36 @@ object OplSourcePreference {
     }
 }
 
+object MetricPreference {
+    const val TOTAL = "total"
+    const val GL = "gl"
+    private const val KEY = "metric_preference"
+    private const val PREFS = "myliftsquad_prefs"
+
+    private val _flow = MutableStateFlow(TOTAL)
+    val flow: StateFlow<String> = _flow
+
+    fun load(context: Context) {
+        _flow.value = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .getString(KEY, TOTAL) ?: TOTAL
+    }
+
+    fun save(context: Context, value: String) {
+        _flow.value = value
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .edit().putString(KEY, value).apply()
+    }
+}
+
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
 
     val theme: StateFlow<String> = ThemePreference.flow
     val oplSource: StateFlow<String> = OplSourcePreference.flow
+    val metric: StateFlow<String> = MetricPreference.flow
 
     fun setTheme(value: String) = ThemePreference.save(getApplication(), value)
     fun setOplSource(value: String) = OplSourcePreference.save(getApplication(), value)
+    fun setMetric(value: String) = MetricPreference.save(getApplication(), value)
 
     private val db = (application as MyLiftSquadApp).database
     private val gson = Gson()
