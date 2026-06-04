@@ -239,7 +239,7 @@ interface MeetEntry {
   date: string; meet: string; federation: string; event: string;
   equipment: string; division: string; bodyweight: string;
   weightClass: string; squat: string; bench: string; deadlift: string;
-  total: string; place: string;
+  total: string; glPoints: string; place: string;
 }
 
 async function getLifterHistory(slug: string, base: string): Promise<{ name: string; meets: MeetEntry[] } | null> {
@@ -254,7 +254,7 @@ async function getLifterHistory(slug: string, base: string): Promise<{ name: str
   const fedIdx = col("Federation"), eventIdx = col("Event"), eqIdx = col("Equipment");
   const divIdx = col("Division"), bwIdx = col("BodyweightKg"), wcIdx = col("WeightClassKg");
   const sqIdx = col("Best3SquatKg"), bchIdx = col("Best3BenchKg"), dlIdx = col("Best3DeadliftKg");
-  const totalIdx = col("TotalKg"), placeIdx = col("Place");
+  const totalIdx = col("TotalKg"), glIdx = col("Goodlift"), placeIdx = col("Place");
   const rows = lines.slice(1).map(parseCsvRow);
   const name = nameIdx >= 0 ? (rows[0]?.[nameIdx] ?? slug) : slug;
   const meets: MeetEntry[] = rows
@@ -272,6 +272,7 @@ async function getLifterHistory(slug: string, base: string): Promise<{ name: str
       bench: bchIdx >= 0 ? r[bchIdx] : "",
       deadlift: dlIdx >= 0 ? r[dlIdx] : "",
       total: totalIdx >= 0 ? r[totalIdx] : "",
+      glPoints: glIdx >= 0 ? r[glIdx] : "",
       place: placeIdx >= 0 ? r[placeIdx] : "",
     }))
     .sort((a, b) => b.date.localeCompare(a.date));
