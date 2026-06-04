@@ -4,7 +4,7 @@ export interface Env {
 
 interface AthleteRef {
   name: string;
-  slug: string;
+  slug: string;  // empty string means no OPL record; app handles gracefully
 }
 
 interface SquadPayload {
@@ -57,7 +57,7 @@ function validateSquad(squad: SquadPayload): string | null {
     return `Squad "${name}" exceeds the maximum of ${MAX_ATHLETES} athletes`;
   if (!squad.athletes.every(a =>
     a && typeof a.name === 'string' && a.name.length > 0 && a.name.length <= 200 &&
-    typeof a.slug === 'string' && a.slug.length > 0 && a.slug.length <= 100
+    (a.slug === undefined || a.slug === null || (typeof a.slug === 'string' && a.slug.length <= 100))
   )) return `Squad "${name}" contains an invalid athlete`;
   return null;
 }
@@ -133,7 +133,7 @@ export default {
 
       const normalised = squads.map(s => ({
         name: s.name.trim(),
-        athletes: s.athletes,
+        athletes: s.athletes.map(a => ({ name: a.name, slug: a.slug ?? '' })),
       }));
 
       let code = generateCode();

@@ -37,6 +37,7 @@ interface OplResult {
   confidence: "high" | "medium" | "low";
   weightClass: string;
   total: string;
+  glPoints: string;
   squat: string;
   bench: string;
   deadlift: string;
@@ -174,6 +175,7 @@ async function searchOplGender(name: string, genderPath: string, base: string): 
       confidence,
       weightClass: row.length > 18 ? String(row[18] ?? "") : "",
       total: row.length > 22 ? String(row[22] ?? "") : "",
+      glPoints: row.length > 23 ? String(row[23] ?? "") : "",
       squat: row.length > 19 ? String(row[19] ?? "") : "",
       bench: row.length > 20 ? String(row[20] ?? "") : "",
       deadlift: row.length > 21 ? String(row[21] ?? "") : "",
@@ -206,6 +208,7 @@ interface SlugInfo {
   name: string;
   weightClass: string;
   total: string;
+  glPoints: string;
   squat: string;
   bench: string;
   deadlift: string;
@@ -295,6 +298,7 @@ async function lookupOplSlug(slug: string, base: string): Promise<SlugInfo | nul
   const dlIdx = col("Best3DeadliftKg");
   const fedIdx = col("Federation");
   const eqIdx = col("Equipment");
+  const glIdx = col("Goodlift");
   if (nameIdx < 0 || totalIdx < 0) return null;
 
   const rows = lines.slice(1).map((l) => l.split(","));
@@ -304,7 +308,7 @@ async function lookupOplSlug(slug: string, base: string): Promise<SlugInfo | nul
     (r) => placeIdx >= 0 && r[placeIdx] !== "DQ" && totalIdx >= 0 && parseFloat(r[totalIdx]) > 0
   );
 
-  if (!valid.length) return { name, weightClass: "", total: "", squat: "", bench: "", deadlift: "", federation: "", equipment: "" };
+  if (!valid.length) return { name, weightClass: "", total: "", glPoints: "", squat: "", bench: "", deadlift: "", federation: "", equipment: "" };
 
   const latest = dateIdx >= 0
     ? [...valid].sort((a, b) => b[dateIdx].localeCompare(a[dateIdx]))[0]
@@ -312,6 +316,7 @@ async function lookupOplSlug(slug: string, base: string): Promise<SlugInfo | nul
   const latestWc = wcIdx >= 0 ? (latest[wcIdx] ?? "") : "";
   const latestFed = fedIdx >= 0 ? (latest[fedIdx] ?? "") : "";
   const latestEq = eqIdx >= 0 ? (latest[eqIdx] ?? "") : "";
+  const latestGl = glIdx >= 0 ? (latest[glIdx] ?? "") : "";
 
   const bestTotal = Math.max(...valid.map((r) => parseFloat(r[totalIdx]) || 0));
   const bestSquat = sqIdx >= 0 ? Math.max(...valid.map((r) => parseFloat(r[sqIdx]) || 0)) : 0;
@@ -322,6 +327,7 @@ async function lookupOplSlug(slug: string, base: string): Promise<SlugInfo | nul
     name,
     weightClass: latestWc,
     total: bestTotal > 0 ? String(bestTotal) : "",
+    glPoints: latestGl,
     squat: bestSquat > 0 ? String(bestSquat) : "",
     bench: bestBench > 0 ? String(bestBench) : "",
     deadlift: bestDeadlift > 0 ? String(bestDeadlift) : "",
@@ -382,7 +388,7 @@ export default {
           getLiftingcastLifters(parsed.meetId, parsed.platformId),
         ]);
         if (!lifters.length) return jsonRes({ error: "No lifters found for this meet / platform" }, 404, c);
-        return jsonRes({ meet, lifters, meetId: parsed.meetId }, 200, c);
+        return jsonRes({ meet, lifters, meetId: parsed.meetId }, 200, { ...c, "Cache-Control": "no-store" });
       } catch (err) {
         return jsonRes({ error: String(err) }, 502, c);
       }
@@ -555,6 +561,10 @@ tr:last-child td{border-bottom:none}
 .spinner{display:inline-block;width:28px;height:28px;border:2.5px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .75s linear infinite;margin-bottom:14px}
 @keyframes spin{to{transform:rotate(360deg)}}
 .actions{display:flex;gap:10px;align-items:center}
+.metric-toggle{display:flex;gap:0;margin-bottom:16px;border:1px solid var(--border);border-radius:var(--rs);overflow:hidden;width:fit-content}
+.tog-btn{background:var(--surface);color:var(--text-muted);border:none;padding:7px 18px;font-size:.875rem;font-weight:500;cursor:pointer;transition:background .15s,color .15s}
+.tog-btn:hover{background:var(--surface2)}
+.tog-active{background:var(--accent-dim);color:var(--accent);font-weight:600}
 @media(max-width:580px){
   th:nth-child(3),td:nth-child(3){display:none}
   .sum-num{font-size:1.4rem}
@@ -581,7 +591,8 @@ var st = {
   resolvedCount: 0,
   bundleCodes: null,
   genError: null,
-  error: null
+  error: null,
+  metric: 'total'
 };
 
 function esc(s) {
@@ -598,6 +609,16 @@ function groupByFlight(lifters) {
   return g;
 }
 
+function metricLabel() {
+  return st.metric === 'gl' ? 'GL Points' : 'Total (kg)';
+}
+
+function metricValue(r) {
+  if (!r || !r.oplSlug) return '<span class="muted">—</span>';
+  var val = st.metric === 'gl' ? r.glPoints : r.total;
+  return val ? esc(val) : '<span class="muted">—</span>';
+}
+
 function buildTableRows(entries) {
   var html = '';
   for (var i = 0; i < entries.length; i++) {
@@ -606,24 +627,33 @@ function buildTableRows(entries) {
     var r = st.resolved[e.idx];
     html += '<tr><td>' + esc(lifter.name) + '</td>';
     if (!r) {
-      html += '<td><span class="muted">—</span></td><td></td><td><span class="badge bp">Resolving…</span></td>';
+      html += '<td><span class="muted">—</span></td><td></td><td><span class="badge bp">Resolving…</span></td><td><span class="muted">—</span></td>';
     } else if (r.oplSlug) {
       html += '<td><span class="slug">' + esc(r.oplSlug) + '</span></td>';
       html += '<td>' + (r.oplName && r.oplName !== lifter.name ? '<span class="muted">' + esc(r.oplName) + '</span>' : '') + '</td>';
       var bclass = r.confidence === 'high' ? 'bh' : r.confidence === 'medium' ? 'bm' : 'bl';
       html += '<td><span class="badge ' + bclass + '">' + r.confidence + '</span></td>';
+      html += '<td>' + metricValue(r) + '</td>';
     } else {
-      html += '<td><span class="muted">—</span></td><td></td><td><span class="badge bn">None</span></td>';
+      html += '<td><span class="muted">—</span></td><td></td><td><span class="badge bn">None</span></td><td><span class="muted">—</span></td>';
     }
     html += '</tr>';
   }
   return html;
 }
 
+function buildMetricToggle() {
+  var isTot = st.metric === 'total';
+  return '<div class="metric-toggle">' +
+    '<button class="tog-btn' + (isTot ? ' tog-active' : '') + '" onclick="setMetric(\'total\')">Total</button>' +
+    '<button class="tog-btn' + (!isTot ? ' tog-active' : '') + '" onclick="setMetric(\'gl\')">GL Points</button>' +
+    '</div>';
+}
+
 function buildFlightsHTML() {
   var groups = groupByFlight(st.lifters);
   var flights = Object.keys(groups).sort();
-  var html = '';
+  var html = buildMetricToggle();
   for (var fi = 0; fi < flights.length; fi++) {
     var f = flights[fi];
     var entries = groups[f];
@@ -634,7 +664,7 @@ function buildFlightsHTML() {
     html += '<span class="flight-count">' + entries.length + ' athletes</span>';
     html += '</div>';
     html += '<div class="tbl-wrap"><table>';
-    html += '<thead><tr><th>Lifter</th><th>OPL Slug</th><th>OPL Name</th><th>Confidence</th></tr></thead>';
+    html += '<thead><tr><th>Lifter</th><th>OPL Slug</th><th>OPL Name</th><th>Confidence</th><th>' + metricLabel() + '</th></tr></thead>';
     html += '<tbody>' + buildTableRows(entries) + '</tbody>';
     html += '</table></div></div>';
   }
@@ -745,6 +775,11 @@ function render() {
   }
 }
 
+function setMetric(m) {
+  st.metric = m;
+  render();
+}
+
 function doReset() {
   st.phase = 'input';
   st.error = null;
@@ -767,7 +802,7 @@ async function doFetch() {
   render();
 
   try {
-    var res = await fetch('/api/meet?url=' + encodeURIComponent(st.lcUrl));
+    var res = await fetch('/api/meet?url=' + encodeURIComponent(st.lcUrl), { cache: 'no-store' });
     var data = await res.json();
     if (!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
 
@@ -802,10 +837,10 @@ async function doResolveAll() {
         .then(function(r) { return r.json(); })
         .then(function(d) {
           var best = d.results && d.results[0];
-          return { idx: idx, oplName: best ? best.name : '', oplSlug: best ? best.slug : '', confidence: best ? best.confidence : 'none' };
+          return { idx: idx, oplName: best ? best.name : '', oplSlug: best ? best.slug : '', confidence: best ? best.confidence : 'none', total: best ? (best.total || '') : '', glPoints: best ? (best.glPoints || '') : '' };
         })
         .catch(function() {
-          return { idx: idx, oplName: '', oplSlug: '', confidence: 'none' };
+          return { idx: idx, oplName: '', oplSlug: '', confidence: 'none', total: '', glPoints: '' };
         });
     });
     var results = await Promise.all(promises);
