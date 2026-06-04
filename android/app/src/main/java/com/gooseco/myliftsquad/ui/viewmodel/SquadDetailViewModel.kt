@@ -29,6 +29,8 @@ import java.util.concurrent.ConcurrentHashMap
 enum class AthleteSortOption(val label: String) {
     TOTAL_DESC("Total ↓"),
     TOTAL_ASC("Total ↑"),
+    GL_DESC("GL Points ↓"),
+    GL_ASC("GL Points ↑"),
     SQUAT_DESC("Squat ↓"),
     SQUAT_ASC("Squat ↑"),
     BENCH_DESC("Bench ↓"),
@@ -40,6 +42,8 @@ enum class AthleteSortOption(val label: String) {
 private fun List<Athlete>.sortedBy(option: AthleteSortOption): List<Athlete> = when (option) {
     AthleteSortOption.TOTAL_DESC    -> sortedByDescending { it.bestTotal ?: -1.0 }
     AthleteSortOption.TOTAL_ASC     -> sortedBy { it.bestTotal ?: Double.MAX_VALUE }
+    AthleteSortOption.GL_DESC       -> sortedByDescending { it.bestGlPoints ?: -1.0 }
+    AthleteSortOption.GL_ASC        -> sortedBy { it.bestGlPoints ?: Double.MAX_VALUE }
     AthleteSortOption.SQUAT_DESC    -> sortedByDescending { it.bestSquat ?: -1.0 }
     AthleteSortOption.SQUAT_ASC     -> sortedBy { it.bestSquat ?: Double.MAX_VALUE }
     AthleteSortOption.BENCH_DESC    -> sortedByDescending { it.bestBench ?: -1.0 }
@@ -80,7 +84,10 @@ class SquadDetailViewModel(app: Application) : AndroidViewModel(app) {
             initialValue = null
         )
 
-    private val _sortOption = MutableStateFlow(AthleteSortOption.TOTAL_DESC)
+    private val _sortOption = MutableStateFlow(
+        if (MetricPreference.flow.value == MetricPreference.GL) AthleteSortOption.GL_DESC
+        else AthleteSortOption.TOTAL_DESC
+    )
     val sortOption: StateFlow<AthleteSortOption> = _sortOption.asStateFlow()
 
     @OptIn(ExperimentalCoroutinesApi::class)

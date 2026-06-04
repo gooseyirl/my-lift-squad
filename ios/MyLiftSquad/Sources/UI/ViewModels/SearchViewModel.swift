@@ -150,6 +150,7 @@ final class SearchViewModel {
                 totalKg: result.totalKg,
                 place: result.place,
                 dots: result.dots,
+                glPoints: result.glPoints,
                 meetCountry: result.meetCountry,
                 meetTown: result.meetTown
             )
@@ -165,6 +166,7 @@ final class SearchViewModel {
         athlete.bestBenchKg = prs.bestBench
         athlete.bestDeadliftKg = prs.bestDeadlift
         athlete.bestTotalKg = prs.bestTotal
+        athlete.bestGlPoints = prs.bestGlPoints
 
         if let latest = results.first {
             if !latest.federation.isEmpty { athlete.federation = latest.federation }

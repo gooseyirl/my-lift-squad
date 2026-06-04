@@ -4,6 +4,8 @@ import SwiftData
 enum AthleteSortOption: String, CaseIterable {
     case totalDesc = "Total ↓"
     case totalAsc = "Total ↑"
+    case glDesc = "GL Points ↓"
+    case glAsc = "GL Points ↑"
     case squatDesc = "Squat ↓"
     case squatAsc = "Squat ↑"
     case benchDesc = "Bench ↓"
@@ -28,8 +30,8 @@ final class SquadDetailViewModel {
     // Max favourites snackbar
     var showMaxFavsMessage = false
 
-    // Sort
-    var sortOption: AthleteSortOption = .totalDesc
+    // Sort — default matches the active metric preference
+    var sortOption: AthleteSortOption = UserDefaults.standard.string(forKey: "metric_preference") == "gl" ? .glDesc : .totalDesc
 
     // Squad full toast
     var showSquadFullMessage = false
@@ -222,14 +224,16 @@ final class SquadDetailViewModel {
 private extension Array where Element == Athlete {
     func sorted(by option: AthleteSortOption) -> [Athlete] {
         switch option {
-        case .totalDesc:    return sorted { ($0.bestTotalKg) > ($1.bestTotalKg) }
-        case .totalAsc:     return sorted { ($0.bestTotalKg) < ($1.bestTotalKg) }
-        case .squatDesc:    return sorted { ($0.bestSquatKg) > ($1.bestSquatKg) }
-        case .squatAsc:     return sorted { ($0.bestSquatKg) < ($1.bestSquatKg) }
-        case .benchDesc:    return sorted { ($0.bestBenchKg) > ($1.bestBenchKg) }
-        case .benchAsc:     return sorted { ($0.bestBenchKg) < ($1.bestBenchKg) }
-        case .deadliftDesc: return sorted { ($0.bestDeadliftKg) > ($1.bestDeadliftKg) }
-        case .deadliftAsc:  return sorted { ($0.bestDeadliftKg) < ($1.bestDeadliftKg) }
+        case .totalDesc:    return sorted { $0.bestTotalKg > $1.bestTotalKg }
+        case .totalAsc:     return sorted { $0.bestTotalKg < $1.bestTotalKg }
+        case .glDesc:       return sorted { ($0.bestGlPoints ?? 0) > ($1.bestGlPoints ?? 0) }
+        case .glAsc:        return sorted { ($0.bestGlPoints ?? 0) < ($1.bestGlPoints ?? 0) }
+        case .squatDesc:    return sorted { $0.bestSquatKg > $1.bestSquatKg }
+        case .squatAsc:     return sorted { $0.bestSquatKg < $1.bestSquatKg }
+        case .benchDesc:    return sorted { $0.bestBenchKg > $1.bestBenchKg }
+        case .benchAsc:     return sorted { $0.bestBenchKg < $1.bestBenchKg }
+        case .deadliftDesc: return sorted { $0.bestDeadliftKg > $1.bestDeadliftKg }
+        case .deadliftAsc:  return sorted { $0.bestDeadliftKg < $1.bestDeadliftKg }
         }
     }
 }
