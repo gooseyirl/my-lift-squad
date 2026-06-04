@@ -25,7 +25,7 @@ struct SquadsView: View {
             .navigationTitle(viewModel?.isSelecting == true
                 ? "\(viewModel?.selectedSquadIDs.count ?? 0) selected"
                 : "My Lift Squad")
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 if let vm = viewModel, vm.isSelecting {
                     ToolbarItem(placement: .navigationBarLeading) {
@@ -143,6 +143,9 @@ struct SquadsView: View {
                 viewModel = SquadsViewModel(modelContext: modelContext)
             }
             viewModel?.loadData()
+        }
+        .onChange(of: navigatingToSquad) { _, newValue in
+            if newValue == nil { viewModel?.loadData() }
         }
     }
 
