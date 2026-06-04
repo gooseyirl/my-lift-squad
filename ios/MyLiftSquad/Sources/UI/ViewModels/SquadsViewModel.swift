@@ -155,6 +155,7 @@ final class SquadsViewModel {
 
             if let (results, _) = try? await OplApiService.shared.fetchHistory(slug: ref.slug),
                !results.isEmpty {
+                try? modelContext.delete(model: CompetitionEntry.self, where: #Predicate { $0.athleteSlug == ref.slug })
                 for result in results {
                     modelContext.insert(CompetitionEntry(
                         athleteSlug: ref.slug, date: result.date, meetName: result.meetName,
@@ -163,6 +164,7 @@ final class SquadsViewModel {
                         bodyweightKg: result.bodyweightKg, best3SquatKg: result.best3SquatKg,
                         best3BenchKg: result.best3BenchKg, best3DeadliftKg: result.best3DeadliftKg,
                         totalKg: result.totalKg, place: result.place, dots: result.dots,
+                        glPoints: result.glPoints,
                         meetCountry: result.meetCountry, meetTown: result.meetTown
                     ))
                 }
