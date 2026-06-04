@@ -592,7 +592,8 @@ var st = {
   bundleCodes: null,
   genError: null,
   error: null,
-  metric: 'total'
+  metric: 'total',
+  source: 'opl'
 };
 
 function esc(s) {
@@ -650,10 +651,18 @@ function buildMetricToggle() {
     '</div>';
 }
 
+function buildSourceToggle() {
+  var isOpl = st.source === 'opl';
+  return '<div class="metric-toggle">' +
+    '<button class="tog-btn' + (isOpl ? ' tog-active' : '') + '" onclick="setSource(\'opl\')">OpenPowerlifting</button>' +
+    '<button class="tog-btn' + (!isOpl ? ' tog-active' : '') + '" onclick="setSource(\'ipf\')">OpenIPF</button>' +
+    '</div>';
+}
+
 function buildFlightsHTML() {
   var groups = groupByFlight(st.lifters);
   var flights = Object.keys(groups).sort();
-  var html = buildMetricToggle();
+  var html = '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">' + buildSourceToggle() + buildMetricToggle() + '</div>';
   for (var fi = 0; fi < flights.length; fi++) {
     var f = flights[fi];
     var entries = groups[f];
@@ -708,7 +717,8 @@ function render() {
       var pct = st.lifters.length > 0 ? Math.round(st.resolvedCount / st.lifters.length * 100) : 0;
       html += '<div class="prog-wrap">';
       html += '<div class="prog-bg"><div class="prog-fill" style="width:' + pct + '%"></div></div>';
-      html += '<p class="prog-label">Resolving OpenPowerlifting slugs… ' + st.resolvedCount + ' / ' + st.lifters.length + '</p>';
+      var srcLabel = st.source === 'ipf' ? 'OpenIPF' : 'OpenPowerlifting';
+      html += '<p class="prog-label">Resolving ' + srcLabel + ' slugs… ' + st.resolvedCount + ' / ' + st.lifters.length + '</p>';
       html += '</div>';
     } else {
       html += '<p class="hint" style="margin-top:8px">Squad prefix: <strong>' + esc(meetLabel()) + '</strong></p>';
@@ -780,6 +790,18 @@ function setMetric(m) {
   render();
 }
 
+async function setSource(s) {
+  if (s === st.source) return;
+  st.source = s;
+  st.resolved = new Array(st.lifters.length).fill(null);
+  st.resolvedCount = 0;
+  st.phase = 'resolving';
+  render();
+  await doResolveAll();
+  st.phase = 'done';
+  render();
+}
+
 function doReset() {
   st.phase = 'input';
   st.error = null;
@@ -832,7 +854,7 @@ async function doResolveAll() {
     var baseIdx = i;
     var promises = batch.map(function(lifter, j) {
       var idx = baseIdx + j;
-      var url = '/api/resolve?name=' + encodeURIComponent(lifter.name) + '&gender=' + encodeURIComponent(lifter.gender);
+      var url = '/api/resolve?name=' + encodeURIComponent(lifter.name) + '&gender=' + encodeURIComponent(lifter.gender) + '&source=' + st.source;
       return fetch(url)
         .then(function(r) { return r.json(); })
         .then(function(d) {
