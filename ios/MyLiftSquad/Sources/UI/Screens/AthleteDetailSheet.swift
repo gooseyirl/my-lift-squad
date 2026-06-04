@@ -61,8 +61,8 @@ struct AthleteDetailSheet: View {
                         LiftStatView(label: "Bench", value: athlete.bestBenchKg)
                         LiftStatView(label: "Deadlift", value: athlete.bestDeadliftKg)
                         LiftStatView(label: "Total", value: athlete.bestTotalKg, highlight: !glIsActive)
-                        if athlete.bestGlPoints > 0 {
-                            LiftStatView(label: "GL Pts", value: athlete.bestGlPoints,
+                        if let gl = athlete.bestGlPoints, gl > 0 {
+                            LiftStatView(label: "GL Pts", value: gl,
                                          highlight: glIsActive, isPoints: true)
                         }
                     }

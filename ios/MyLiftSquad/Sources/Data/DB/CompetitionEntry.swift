@@ -18,7 +18,7 @@ final class CompetitionEntry {
     var totalKg: Double
     var place: String
     var dots: Double
-    var glPoints: Double
+    var glPoints: Double?
     var meetCountry: String
     var meetTown: String
 
@@ -37,7 +37,7 @@ final class CompetitionEntry {
         totalKg: Double = 0,
         place: String = "",
         dots: Double = 0,
-        glPoints: Double = 0,
+        glPoints: Double? = nil,
         meetCountry: String = "",
         meetTown: String = ""
     ) {

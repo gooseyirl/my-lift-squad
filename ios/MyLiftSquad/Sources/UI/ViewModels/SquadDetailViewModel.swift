@@ -89,7 +89,7 @@ final class SquadDetailViewModel {
                 totalKg: entry.totalKg,
                 place: entry.place,
                 dots: entry.dots,
-                glPoints: entry.glPoints,
+                glPoints: entry.glPoints ?? 0,
                 meetCountry: entry.meetCountry,
                 meetTown: entry.meetTown
             )

@@ -331,8 +331,8 @@ struct AthleteRowView: View {
             }
             Spacer()
             VStack(alignment: .trailing, spacing: 2) {
-                let primaryVal = glIsActive ? athlete.bestGlPoints : athlete.bestTotalKg
-                let secondaryVal = glIsActive ? athlete.bestTotalKg : athlete.bestGlPoints
+                let primaryVal = glIsActive ? (athlete.bestGlPoints ?? 0) : athlete.bestTotalKg
+                let secondaryVal = glIsActive ? athlete.bestTotalKg : (athlete.bestGlPoints ?? 0)
                 if primaryVal > 0 {
                     Text(glIsActive ? String(format: "%.2f pts", primaryVal) : "\(Int(primaryVal)) kg")
                         .font(.subheadline)
