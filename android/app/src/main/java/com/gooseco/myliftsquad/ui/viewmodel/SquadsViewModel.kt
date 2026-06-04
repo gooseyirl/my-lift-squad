@@ -177,6 +177,7 @@ class SquadsViewModel(app: Application) : AndroidViewModel(app) {
             try {
                 val results = apiService.fetchCompetitionHistory(ref.slug)
                 if (results.isNotEmpty() && athleteId != null) {
+                    competitionEntryDao.deleteForAthlete(ref.slug)
                     val entries = results.map { r ->
                         CompetitionEntry(
                             athleteSlug = ref.slug, date = r.date, meetName = r.meetName,
