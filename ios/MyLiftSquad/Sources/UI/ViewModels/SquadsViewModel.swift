@@ -339,6 +339,7 @@ final class SquadsViewModel {
                 bodyweightKg: $0.bodyweightKg, best3SquatKg: $0.best3SquatKg,
                 best3BenchKg: $0.best3BenchKg, best3DeadliftKg: $0.best3DeadliftKg,
                 totalKg: $0.totalKg, place: $0.place, dots: $0.dots,
+                glPoints: $0.glPoints,
                 meetCountry: $0.meetCountry, meetTown: $0.meetTown
             )
         }
