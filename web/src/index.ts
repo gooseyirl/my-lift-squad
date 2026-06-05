@@ -451,7 +451,7 @@ export default {
       let body: { state?: unknown };
       try { body = await request.json() as { state?: unknown }; } catch { return jsonRes({ error: "Invalid JSON" }, 400, c); }
       if (!body.state) return jsonRes({ error: "Missing state" }, 400, c);
-      const code = generateCode(8);
+      const code = generateCode(6);
       await env.SHARES.put(`share:${code}`, JSON.stringify(body.state), { expirationTtl: 60 * 60 * 24 * 30 });
       return jsonRes({ code }, 200, c);
     }
