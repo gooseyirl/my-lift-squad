@@ -111,12 +111,12 @@ fun SquadDetailScreen(
     val shareLoading by viewModel.shareLoading.collectAsState()
     val shareError by viewModel.shareError.collectAsState()
     val sortOption by viewModel.sortOption.collectAsState()
+    val viewingAthlete by viewModel.viewingAthlete.collectAsState()
 
     val clipboardManager = LocalClipboardManager.current
 
     var athleteOptions by remember { mutableStateOf<Athlete?>(null) }
     var athleteToDelete by remember { mutableStateOf<Athlete?>(null) }
-    var selectedAthlete by remember { mutableStateOf<Athlete?>(null) }
     var showSortMenu by remember { mutableStateOf(false) }
 
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
@@ -296,7 +296,6 @@ fun SquadDetailScreen(
                     AthleteCard(
                         athlete = athlete,
                         onClick = {
-                            selectedAthlete = athlete
                             viewModel.viewAthlete(athlete)
                         },
                         onLongPress = { athleteOptions = athlete }
@@ -442,13 +441,11 @@ fun SquadDetailScreen(
         )
     }
 
-    // Athlete detail sheet
-    selectedAthlete?.let { athlete ->
+    // Athlete detail sheet — uses viewingAthlete (derived from live Room flow) so
+    // summary fields update in real-time after a refresh without needing to reopen.
+    viewingAthlete?.let { athlete ->
         ModalBottomSheet(
-            onDismissRequest = {
-                selectedAthlete = null
-                viewModel.clearViewingAthlete()
-            },
+            onDismissRequest = { viewModel.clearViewingAthlete() },
             sheetState = sheetState
         ) {
             AthleteDetailSheet(

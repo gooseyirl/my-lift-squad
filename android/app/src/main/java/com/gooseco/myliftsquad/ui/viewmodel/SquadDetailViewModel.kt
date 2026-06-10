@@ -120,6 +120,18 @@ class SquadDetailViewModel(app: Application) : AndroidViewModel(app) {
             initialValue = emptyList()
         )
 
+    // Derives the currently-viewed athlete from the live Room-backed athletes flow so
+    // that summary fields (best lifts, federation, etc.) update in real-time after a
+    // refresh, without requiring the sheet to be closed and reopened.
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val viewingAthlete: StateFlow<Athlete?> = combine(athletes, viewingAthleteSlug) { list, slug ->
+        if (slug != null) list.find { it.slug == slug } else null
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5_000),
+        initialValue = null
+    )
+
     private val _historyLoading = MutableStateFlow(false)
     val historyLoading: StateFlow<Boolean> = _historyLoading
 
