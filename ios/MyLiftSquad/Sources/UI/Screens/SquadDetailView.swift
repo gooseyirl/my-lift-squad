@@ -172,6 +172,7 @@ struct SquadDetailView: View {
                 )
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
+                .presentationBackground(Color(.systemBackground))
             }
         }
         .sheet(isPresented: Binding(
