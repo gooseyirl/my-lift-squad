@@ -74,8 +74,9 @@ interface AthleteDao {
     @Query("""
         UPDATE athletes
         SET bestSquat = :bestSquat, bestBench = :bestBench, bestDeadlift = :bestDeadlift,
-            bestTotal = :bestTotal, bestGlPoints = :bestGlPoints
+            bestTotal = :bestTotal, bestGlPoints = :bestGlPoints, bestDots = :bestDots,
+            dataSource = :dataSource
         WHERE id = :athleteId
     """)
-    suspend fun updatePRs(athleteId: Int, bestSquat: Double?, bestBench: Double?, bestDeadlift: Double?, bestTotal: Double?, bestGlPoints: Double?)
+    suspend fun updatePRs(athleteId: Int, bestSquat: Double?, bestBench: Double?, bestDeadlift: Double?, bestTotal: Double?, bestGlPoints: Double?, bestDots: Double?, dataSource: String?)
 }

@@ -170,6 +170,7 @@ class SquadsViewModel(app: Application) : AndroidViewModel(app) {
                     country = null, federation = null,
                     bestSquat = null, bestBench = null, bestDeadlift = null, bestTotal = null,
                     bestGlPoints = null,
+                    bestDots = null,
                     weightClass = null, equipment = null, lastCompDate = null, gender = null
                 )
             )
@@ -205,7 +206,9 @@ class SquadsViewModel(app: Application) : AndroidViewModel(app) {
                         athleteId = athleteId,
                         bestSquat = prs.bestSquat, bestBench = prs.bestBench,
                         bestDeadlift = prs.bestDeadlift, bestTotal = prs.bestTotal,
-                        bestGlPoints = prs.bestGlPoints
+                        bestGlPoints = prs.bestGlPoints,
+                        bestDots = prs.bestDots,
+                        dataSource = OplSourcePreference.flow.value
                     )
                 }
             } catch (_: Exception) {

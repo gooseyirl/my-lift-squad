@@ -11,7 +11,8 @@ object PrCalculator {
         val bestBench: Double?,
         val bestDeadlift: Double?,
         val bestTotal: Double?,
-        val bestGlPoints: Double?
+        val bestGlPoints: Double?,
+        val bestDots: Double?
     )
 
     fun calculate(entries: List<CompetitionEntry>): Result {
@@ -21,7 +22,8 @@ object PrCalculator {
             bestBench = valid.mapNotNull { it.best3BenchKg?.takeIf { v -> v > 0 } }.maxOrNull(),
             bestDeadlift = valid.mapNotNull { it.best3DeadliftKg?.takeIf { v -> v > 0 } }.maxOrNull(),
             bestTotal = valid.mapNotNull { it.totalKg?.takeIf { v -> v > 0 } }.maxOrNull(),
-            bestGlPoints = valid.mapNotNull { it.glPoints?.takeIf { v -> v > 0 } }.maxOrNull()
+            bestGlPoints = valid.mapNotNull { it.glPoints?.takeIf { v -> v > 0 } }.maxOrNull(),
+            bestDots = valid.mapNotNull { it.dots?.takeIf { v -> v > 0 } }.maxOrNull()
         )
     }
 }

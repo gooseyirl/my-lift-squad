@@ -9,7 +9,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Database(
     entities = [Squad::class, Athlete::class, CompetitionEntry::class],
-    version = 5,
+    version = 6,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -79,6 +79,13 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE athletes ADD COLUMN bestDots REAL")
+                database.execSQL("ALTER TABLE athletes ADD COLUMN dataSource TEXT")
+            }
+        }
+
         fun getInstance(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -86,7 +93,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "myliftsquad.db"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
                     .build()
                 INSTANCE = instance
                 instance

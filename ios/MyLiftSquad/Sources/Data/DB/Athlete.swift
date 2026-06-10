@@ -13,6 +13,8 @@ final class Athlete {
     var bestDeadliftKg: Double
     var bestTotalKg: Double
     var bestGlPoints: Double?
+    var bestDots: Double?
+    var dataSource: String?   // "opl" or "ipf" — which source this data was fetched from
     var weightClass: String
     var equipment: String
     var lastCompDate: String
@@ -30,6 +32,8 @@ final class Athlete {
         bestDeadliftKg: Double = 0,
         bestTotalKg: Double = 0,
         bestGlPoints: Double? = nil,
+        bestDots: Double? = nil,
+        dataSource: String? = nil,
         weightClass: String = "",
         equipment: String = "",
         lastCompDate: String = "",
@@ -46,6 +50,8 @@ final class Athlete {
         self.bestDeadliftKg = bestDeadliftKg
         self.bestTotalKg = bestTotalKg
         self.bestGlPoints = bestGlPoints
+        self.bestDots = bestDots
+        self.dataSource = dataSource
         self.weightClass = weightClass
         self.equipment = equipment
         self.lastCompDate = lastCompDate

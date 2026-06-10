@@ -166,7 +166,9 @@ final class SearchViewModel {
         athlete.bestBenchKg = prs.bestBench
         athlete.bestDeadliftKg = prs.bestDeadlift
         athlete.bestTotalKg = prs.bestTotal
-        athlete.bestGlPoints = prs.bestGlPoints
+        athlete.bestGlPoints = prs.bestGlPoints > 0 ? prs.bestGlPoints : nil
+        athlete.bestDots = prs.bestDots > 0 ? prs.bestDots : nil
+        athlete.dataSource = UserDefaults.standard.string(forKey: "opl_source") ?? "opl"
 
         if let latest = results.first {
             if !latest.federation.isEmpty { athlete.federation = latest.federation }

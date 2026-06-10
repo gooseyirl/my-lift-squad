@@ -76,9 +76,11 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.gooseco.myliftsquad.data.db.Athlete
 import com.gooseco.myliftsquad.data.db.CompetitionEntry
+import androidx.compose.ui.platform.LocalUriHandler
 import com.gooseco.myliftsquad.ui.viewmodel.AthleteSortOption
 import com.gooseco.myliftsquad.ui.viewmodel.MetricPreference
 import com.gooseco.myliftsquad.ui.viewmodel.OplSourcePreference
+import com.gooseco.myliftsquad.ui.viewmodel.SecondaryMetricPreference
 import com.gooseco.myliftsquad.ui.viewmodel.SquadDetailViewModel
 
 private fun formatKg(value: Double): String =
@@ -550,29 +552,38 @@ private fun AthleteCard(
                             modifier = Modifier.size(16.dp)
                         )
                     }
-                    val glIsActive = metric == MetricPreference.GL
+                    val secondaryInCard by SecondaryMetricPreference.flow.collectAsState()
                     Column(horizontalAlignment = Alignment.End) {
-                        val primaryTotal = if (!glIsActive) athlete.bestTotal else athlete.bestGlPoints
-                        val secondaryTotal = if (!glIsActive) athlete.bestGlPoints else athlete.bestTotal
-                        primaryTotal?.let { v ->
+                        athlete.bestTotal?.let { v ->
                             Badge(
                                 containerColor = MaterialTheme.colorScheme.primaryContainer,
                                 contentColor = MaterialTheme.colorScheme.onPrimaryContainer
                             ) {
                                 Text(
-                                    text = if (!glIsActive) formatKg(v) else formatPoints(v),
+                                    text = formatKg(v),
                                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                                     style = MaterialTheme.typography.labelMedium,
                                     fontWeight = FontWeight.Bold
                                 )
                             }
                         }
-                        secondaryTotal?.let { v ->
-                            Text(
-                                text = if (glIsActive) formatKg(v) else formatPoints(v),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                        if (secondaryInCard == SecondaryMetricPreference.GL) {
+                            athlete.bestGlPoints?.let { v ->
+                                Text(
+                                    text = formatPoints(v),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                        if (secondaryInCard == SecondaryMetricPreference.DOTS) {
+                            athlete.bestDots?.let { v ->
+                                Text(
+                                    text = "${"%.2f".format(v)} dots",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
                     }
                 }
@@ -609,10 +620,14 @@ internal fun AthleteDetailSheet(
     historyError: String?,
     onRefresh: () -> Unit
 ) {
-    val oplSource by OplSourcePreference.flow.collectAsState()
-    val isIpf = oplSource == OplSourcePreference.IPF
+    // Use the source the data was actually fetched from — not the current setting
+    val athleteSource = athlete.dataSource ?: OplSourcePreference.flow.value
+    val isIpf = athleteSource == OplSourcePreference.IPF
     val sourceColor = if (isIpf) Color(0xFFFDB93E) else Color(0xFFFB3640)
     val sourceLabel = if (isIpf) "OpenIPF" else "OpenPowerlifting"
+    val profileUrl = if (isIpf) "https://www.openipf.org/u/${athlete.slug}"
+                     else "https://www.openpowerlifting.org/u/${athlete.slug}"
+    val uriHandler = LocalUriHandler.current
 
     LazyColumn(
         modifier = Modifier.fillMaxWidth(),
@@ -659,13 +674,14 @@ internal fun AthleteDetailSheet(
                         }
                         Spacer(Modifier.height(6.dp))
                         Text(
-                            text = sourceLabel,
+                            text = "↗ $sourceLabel",
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.SemiBold,
                             color = sourceColor,
                             modifier = Modifier
                                 .background(sourceColor.copy(alpha = 0.15f), shape = RoundedCornerShape(50))
                                 .padding(horizontal = 8.dp, vertical = 3.dp)
+                                .clickable { uriHandler.openUri(profileUrl) }
                         )
                     }
                     IconButton(
@@ -698,8 +714,7 @@ internal fun AthleteDetailSheet(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(Modifier.height(12.dp))
-                val metricInDetail by MetricPreference.flow.collectAsState()
-                val glIsActiveInDetail = metricInDetail == MetricPreference.GL
+                val secondaryInDetail by SecondaryMetricPreference.flow.collectAsState()
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceEvenly
@@ -707,10 +722,18 @@ internal fun AthleteDetailSheet(
                     LiftStat(label = "Squat", value = athlete.bestSquat)
                     LiftStat(label = "Bench", value = athlete.bestBench)
                     LiftStat(label = "Deadlift", value = athlete.bestDeadlift)
-                    LiftStat(label = "Total", value = athlete.bestTotal, highlight = !glIsActiveInDetail)
-                    athlete.bestGlPoints?.let { gl ->
-                        LiftStat(label = "GL Pts", value = gl, highlight = glIsActiveInDetail,
-                            formatter = { v -> "${"%.2f".format(v)}" })
+                    LiftStat(label = "Total", value = athlete.bestTotal)
+                    if (secondaryInDetail == SecondaryMetricPreference.GL) {
+                        athlete.bestGlPoints?.let { gl ->
+                            LiftStat(label = "GL Pts", value = gl,
+                                formatter = { v -> "${"%.2f".format(v)}" })
+                        }
+                    }
+                    if (secondaryInDetail == SecondaryMetricPreference.DOTS) {
+                        athlete.bestDots?.let { dots ->
+                            LiftStat(label = "Dots", value = dots,
+                                formatter = { v -> "${"%.2f".format(v)}" })
+                        }
                     }
                 }
 
@@ -786,8 +809,7 @@ internal fun AthleteDetailSheet(
 
 @Composable
 private fun CompetitionEntryRow(entry: CompetitionEntry) {
-    val metric by MetricPreference.flow.collectAsState()
-    val glIsActive = metric == MetricPreference.GL
+    val secondary by SecondaryMetricPreference.flow.collectAsState()
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -852,11 +874,18 @@ private fun CompetitionEntryRow(entry: CompetitionEntry) {
             LiftStat(label = "SQ", value = entry.best3SquatKg)
             LiftStat(label = "BP", value = entry.best3BenchKg)
             LiftStat(label = "DL", value = entry.best3DeadliftKg)
-            LiftStat(label = "Total", value = entry.totalKg, highlight = !glIsActive,
-                formatter = ::formatKg)
-            entry.glPoints?.let { gl ->
-                LiftStat(label = "GL Pts", value = gl, highlight = glIsActive,
-                    formatter = { v -> "${"%.2f".format(v)}" })
+            LiftStat(label = "Total", value = entry.totalKg, formatter = ::formatKg)
+            if (secondary == SecondaryMetricPreference.GL) {
+                entry.glPoints?.let { gl ->
+                    LiftStat(label = "GL Pts", value = gl,
+                        formatter = { v -> "${"%.2f".format(v)}" })
+                }
+            }
+            if (secondary == SecondaryMetricPreference.DOTS) {
+                entry.dots?.let { dots ->
+                    LiftStat(label = "Dots", value = dots,
+                        formatter = { v -> "${"%.2f".format(v)}" })
+                }
             }
         }
     }

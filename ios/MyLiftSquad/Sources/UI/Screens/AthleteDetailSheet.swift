@@ -5,18 +5,24 @@ struct AthleteDetailSheet: View {
     let history: [CompetitionResult]
     let isLoading: Bool
     var onRefresh: (() -> Void)? = nil
-    @AppStorage("opl_source") private var oplSource: String = "opl"
-    @AppStorage("metric_preference") private var metricPreference: String = "total"
+    @AppStorage("secondary_metric") private var secondaryMetric: String = "off"
 
-    private var glIsActive: Bool { metricPreference == "gl" }
+    // Use the source the data was actually fetched from (not the current setting)
+    private var athleteSource: String { athlete.dataSource ?? "opl" }
 
     private var sourceColor: Color {
-        oplSource == "ipf"
+        athleteSource == "ipf"
             ? Color(red: 253/255, green: 185/255, blue: 62/255)
             : Color(red: 251/255, green: 54/255, blue: 64/255)
     }
     private var sourceLabel: String {
-        oplSource == "ipf" ? "OpenIPF" : "OpenPowerlifting"
+        athleteSource == "ipf" ? "OpenIPF" : "OpenPowerlifting"
+    }
+    private var profileURL: URL? {
+        let base = athleteSource == "ipf"
+            ? "https://www.openipf.org/u/"
+            : "https://www.openpowerlifting.org/u/"
+        return URL(string: base + athlete.slug)
     }
 
     var body: some View {
@@ -45,11 +51,22 @@ struct AthleteDetailSheet: View {
                             InfoChip(text: athlete.equipment)
                         }
 
-                        InfoChip(
-                            text: sourceLabel,
-                            backgroundColor: sourceColor.opacity(0.15),
-                            textColor: sourceColor
-                        )
+                        // Source chip — tappable to open lifter profile
+                        if let url = profileURL {
+                            Link(destination: url) {
+                                InfoChip(
+                                    text: "↗ " + sourceLabel,
+                                    backgroundColor: sourceColor.opacity(0.15),
+                                    textColor: sourceColor
+                                )
+                            }
+                        } else {
+                            InfoChip(
+                                text: sourceLabel,
+                                backgroundColor: sourceColor.opacity(0.15),
+                                textColor: sourceColor
+                            )
+                        }
                     }
                     .padding(.vertical, 4)
                 }
@@ -60,10 +77,12 @@ struct AthleteDetailSheet: View {
                         LiftStatView(label: "Squat", value: athlete.bestSquatKg)
                         LiftStatView(label: "Bench", value: athlete.bestBenchKg)
                         LiftStatView(label: "Deadlift", value: athlete.bestDeadliftKg)
-                        LiftStatView(label: "Total", value: athlete.bestTotalKg, highlight: !glIsActive)
-                        if let gl = athlete.bestGlPoints, gl > 0 {
-                            LiftStatView(label: "GL Pts", value: gl,
-                                         highlight: glIsActive, isPoints: true)
+                        LiftStatView(label: "Total", value: athlete.bestTotalKg)
+                        if secondaryMetric == "gl", let gl = athlete.bestGlPoints, gl > 0 {
+                            LiftStatView(label: "GL Pts", value: gl, isPoints: true)
+                        }
+                        if secondaryMetric == "dots", let dots = athlete.bestDots, dots > 0 {
+                            LiftStatView(label: "Dots", value: dots, isPoints: true)
                         }
                     }
                 }
@@ -150,9 +169,7 @@ struct InfoChip: View {
 
 struct CompetitionRowView: View {
     let result: CompetitionResult
-    @AppStorage("metric_preference") private var metricPreference: String = "total"
-
-    private var glIsActive: Bool { metricPreference == "gl" }
+    @AppStorage("secondary_metric") private var secondaryMetric: String = "off"
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -205,15 +222,20 @@ struct CompetitionRowView: View {
                 if result.totalKg > 0 {
                     Text("Total \(Int(result.totalKg)) kg")
                         .font(.caption)
-                        .fontWeight(glIsActive ? .regular : .semibold)
-                        .foregroundColor(glIsActive ? .secondary : .primary)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.primary)
                         .padding(.trailing, 8)
                 }
-                if result.glPoints > 0 {
+                if secondaryMetric == "gl", result.glPoints > 0 {
                     Text(String(format: "GL %.2f", result.glPoints))
                         .font(.caption)
-                        .fontWeight(glIsActive ? .semibold : .regular)
-                        .foregroundColor(glIsActive ? .primary : .secondary)
+                        .foregroundColor(.secondary)
+                        .padding(.trailing, 8)
+                }
+                if secondaryMetric == "dots", result.dots > 0 {
+                    Text(String(format: "Dots %.2f", result.dots))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                 }
             }
         }

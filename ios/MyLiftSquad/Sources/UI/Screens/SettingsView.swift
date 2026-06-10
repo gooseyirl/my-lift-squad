@@ -8,7 +8,7 @@ struct SettingsView: View {
     @State private var showFilePicker = false
     @AppStorage("theme_preference") private var themePreference: String = "system"
     @AppStorage("opl_source") private var oplSource: String = "opl"
-    @AppStorage("metric_preference") private var metricPreference: String = "total"
+    @AppStorage("secondary_metric") private var secondaryMetric: String = "off"
 
     var body: some View {
         Group {
@@ -50,13 +50,14 @@ struct SettingsView: View {
                     .foregroundColor(.secondary)
             }
 
-            Section("Display Metric") {
-                Picker("Display Metric", selection: $metricPreference) {
-                    Text("Total").tag("total")
+            Section("Additional Info") {
+                Picker("Additional Info", selection: $secondaryMetric) {
+                    Text("Off").tag("off")
                     Text("GL Points").tag("gl")
+                    Text("Dots").tag("dots")
                 }
                 .pickerStyle(.segmented)
-                Text("Controls which score is shown prominently on athlete cards and history.")
+                Text("Show GL Points or Dots alongside standard lift results.")
                     .font(.caption)
                     .foregroundColor(.secondary)
             }

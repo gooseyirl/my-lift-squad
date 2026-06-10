@@ -296,9 +296,7 @@ struct ShareCodeSheet: View {
 
 struct AthleteRowView: View {
     let athlete: Athlete
-    @AppStorage("metric_preference") private var metricPreference: String = "total"
-
-    private var glIsActive: Bool { metricPreference == "gl" }
+    @AppStorage("secondary_metric") private var secondaryMetric: String = "off"
 
     var body: some View {
         HStack(spacing: 12) {
@@ -331,16 +329,18 @@ struct AthleteRowView: View {
             }
             Spacer()
             VStack(alignment: .trailing, spacing: 2) {
-                let primaryVal = glIsActive ? (athlete.bestGlPoints ?? 0) : athlete.bestTotalKg
-                let secondaryVal = glIsActive ? athlete.bestTotalKg : (athlete.bestGlPoints ?? 0)
-                if primaryVal > 0 {
-                    Text(glIsActive ? String(format: "%.2f pts", primaryVal) : "\(Int(primaryVal)) kg")
+                if athlete.bestTotalKg > 0 {
+                    Text("\(Int(athlete.bestTotalKg)) kg")
                         .font(.subheadline)
                         .fontWeight(.semibold)
                         .foregroundColor(.accentColor)
                 }
-                if secondaryVal > 0 {
-                    Text(glIsActive ? "\(Int(secondaryVal)) kg" : String(format: "%.2f pts", secondaryVal))
+                if secondaryMetric == "gl", let gl = athlete.bestGlPoints, gl > 0 {
+                    Text(String(format: "%.2f pts", gl))
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                } else if secondaryMetric == "dots", let dots = athlete.bestDots, dots > 0 {
+                    Text(String(format: "%.2f dots", dots))
                         .font(.caption2)
                         .foregroundColor(.secondary)
                 }

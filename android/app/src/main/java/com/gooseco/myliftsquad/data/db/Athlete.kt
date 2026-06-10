@@ -30,9 +30,11 @@ data class Athlete(
     val bestDeadlift: Double?,
     val bestTotal: Double?,
     val bestGlPoints: Double?,
+    val bestDots: Double?,
     val weightClass: String?,
     val equipment: String?,
     val lastCompDate: String?,
     val gender: String?,
-    val isFavourite: Boolean = false
+    val isFavourite: Boolean = false,
+    val dataSource: String? = null   // "opl" or "ipf" — which source this data was fetched from
 )

@@ -264,7 +264,9 @@ class SquadDetailViewModel(app: Application) : AndroidViewModel(app) {
                         bestBench = prs.bestBench,
                         bestDeadlift = prs.bestDeadlift,
                         bestTotal = prs.bestTotal,
-                        bestGlPoints = prs.bestGlPoints
+                        bestGlPoints = prs.bestGlPoints,
+                        bestDots = prs.bestDots,
+                        dataSource = OplSourcePreference.flow.value
                     )
                 }
             }
@@ -350,6 +352,7 @@ class SquadDetailViewModel(app: Application) : AndroidViewModel(app) {
                     bestDeadlift = oplAthlete.bestDeadlift,
                     bestTotal = oplAthlete.bestTotal,
                     bestGlPoints = null,
+                    bestDots = null,
                     weightClass = oplAthlete.weightClass,
                     equipment = oplAthlete.equipment,
                     lastCompDate = oplAthlete.lastCompDate,
