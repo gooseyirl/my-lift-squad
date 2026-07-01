@@ -29,6 +29,7 @@ interface Lifter {
   flight: string;
   gender: string;
   weightClass: string;
+  lot?: number | string;
 }
 
 interface OplResult {
@@ -108,6 +109,7 @@ async function getLiftingcastLifters(meetId: string, platformId?: string): Promi
 
   type LifterDoc = {
     name?: string; flight?: string; gender?: string; platformId?: string;
+    lot?: number | string;
     divisions?: Array<{ divisionId?: string; declaredAwardsWeightClassId?: string }>;
   };
   const data = (await lifterRes.json()) as { rows: Array<{ id: string; doc: LifterDoc }> };
@@ -122,12 +124,13 @@ async function getLiftingcastLifters(meetId: string, platformId?: string): Promi
         flight: doc.flight ?? "?",
         gender: doc.gender ?? "MALE",
         platformId: doc.platformId ?? "",
+        lot: doc.lot ?? "",
         weightClass: wcId ? (wcMap[wcId] ?? wcId) : "",
       };
     });
 
   if (platformId) lifters = lifters.filter((l) => l.platformId === platformId);
-  return lifters.map(({ name, flight, gender, weightClass }) => ({ name, flight, gender, weightClass }));
+  return lifters.map(({ name, flight, gender, weightClass, lot }) => ({ name, flight, gender, weightClass, lot }));
 }
 
 // ---------------------------------------------------------------------------
