@@ -324,48 +324,127 @@ async function searchOplGender(name: string, genderPath: string, base: string): 
   if (!ranksRes.ok) return [];
 
   const ranksData = (await ranksRes.json()) as { rows?: unknown[][] };
+  const results: OplResult[] = [];
+  for (const row of ranksData.rows ?? []) {
+    const result = rowToResult(row, name);
+    if (result) results.push(result);
+  }
+  return sortByConfidence(results);
+}
+
+const CONFIDENCE_ORDER: Record<string, number> = { high: 0, medium: 1, low: 2 };
+
+function sortByConfidence(results: OplResult[]): OplResult[] {
+  return results.sort(
+    (a, b) => (CONFIDENCE_ORDER[a.confidence] ?? 3) - (CONFIDENCE_ORDER[b.confidence] ?? 3)
+  );
+}
+
+// A rankings row → a candidate, scored against the name we searched for.
+// Returns null when the row has nothing in common with the name.
+function rowToResult(row: unknown[], name: string): OplResult | null {
+  if (!Array.isArray(row) || row.length < 4) return null;
+  const oplName = String(row[2]);
+  const oplSlug = String(row[3]);
+  const oplLower = oplName.toLowerCase();
   const nameLower = name.toLowerCase();
   const words = nameLower.split(" ").filter((w) => w.length > 2);
+
+  // OpenPowerlifting disambiguates people sharing a name as "David Walsh #2";
+  // that is still an exact name match as far as the user is concerned.
+  const bare = oplLower.replace(/\s*#\d+\s*$/, "");
+
+  let confidence: OplResult["confidence"];
+  if (bare === nameLower) confidence = "high";
+  else if (words.length > 0 && words.every((w) => oplLower.includes(w))) confidence = "medium";
+  else if (words.some((w) => oplLower.includes(w))) confidence = "low";
+  else return null;
+
+  return {
+    name: oplName,
+    slug: oplSlug,
+    confidence,
+    weightClass: row.length > 18 ? String(row[18] ?? "") : "",
+    total: row.length > 22 ? String(row[22] ?? "") : "",
+    glPoints: row.length > 23 ? String(row[23] ?? "") : "",
+    squat: row.length > 19 ? String(row[19] ?? "") : "",
+    bench: row.length > 20 ? String(row[20] ?? "") : "",
+    deadlift: row.length > 21 ? String(row[21] ?? "") : "",
+    federation: row.length > 6 ? String(row[6] ?? "") : "",
+    equipment: row.length > 11 ? String(row[11] ?? "") : "",
+  };
+}
+
+// Walk every search hit for a name rather than skimming the 25 rankings rows
+// after the first one. That is what surfaces the other people sharing a name
+// — "David Walsh #1/#2/#3" are far apart in the rankings, so the window used
+// by searchOplGender only ever sees one of them.
+async function walkOplMatches(
+  name: string,
+  genderPath: string,
+  base: string,
+  limit: number
+): Promise<OplResult[]> {
+  const q = encodeURIComponent(name);
   const results: OplResult[] = [];
+  let start = 0;
 
-  for (const row of ranksData.rows ?? []) {
-    if (!Array.isArray(row) || row.length < 4) continue;
-    const oplName = String(row[2]);
-    const oplSlug = String(row[3]);
-    const oplLower = oplName.toLowerCase();
+  for (let i = 0; i < limit; i++) {
+    const searchRes = await fetch(
+      `${base}/search/rankings/${genderPath}?q=${q}&start=${start}&lang=en&units=kg`,
+      { headers: { "User-Agent": UA } }
+    );
+    if (!searchRes.ok) break;
+    const searchData = (await searchRes.json()) as { next_index?: number | null };
+    const idx = searchData.next_index;
+    if (idx == null) break;
 
-    let confidence: OplResult["confidence"];
-    if (oplLower === nameLower) confidence = "high";
-    else if (words.length > 0 && words.every((w) => oplLower.includes(w))) confidence = "medium";
-    else if (words.some((w) => oplLower.includes(w))) confidence = "low";
-    else continue;
+    const rowRes = await fetch(
+      `${base}/rankings/${genderPath}?start=${idx}&end=${idx}&lang=en&units=kg`,
+      { headers: { "User-Agent": UA } }
+    );
+    if (!rowRes.ok) break;
+    const rowData = (await rowRes.json()) as { rows?: unknown[][] };
+    const result = rowData.rows?.[0] ? rowToResult(rowData.rows[0], name) : null;
+    if (result) results.push(result);
 
-    results.push({
-      name: oplName,
-      slug: oplSlug,
-      confidence,
-      weightClass: row.length > 18 ? String(row[18] ?? "") : "",
-      total: row.length > 22 ? String(row[22] ?? "") : "",
-      glPoints: row.length > 23 ? String(row[23] ?? "") : "",
-      squat: row.length > 19 ? String(row[19] ?? "") : "",
-      bench: row.length > 20 ? String(row[20] ?? "") : "",
-      deadlift: row.length > 21 ? String(row[21] ?? "") : "",
-      federation: row.length > 6 ? String(row[6] ?? "") : "",
-      equipment: row.length > 11 ? String(row[11] ?? "") : "",
-    });
+    start = idx + 1;
+  }
+  return results;
+}
+
+// Candidates for the manual picker: the same person's namesakes, best first.
+async function findCandidates(
+  name: string,
+  gender: string,
+  base: string,
+  limit: number
+): Promise<OplResult[]> {
+  const [primary, secondary] = genderPaths(gender);
+  let results = await walkOplMatches(name, primary, base, limit);
+  if (results.length < limit) {
+    const other = await walkOplMatches(name, secondary, base, limit - results.length);
+    results = results.concat(other);
   }
 
-  const order: Record<string, number> = { high: 0, medium: 1, low: 2 };
-  return results.sort((a, b) => (order[a.confidence] ?? 3) - (order[b.confidence] ?? 3));
+  const seen = new Set<string>();
+  const unique = results.filter((r) => {
+    if (!r.slug || seen.has(r.slug)) return false;
+    seen.add(r.slug);
+    return true;
+  });
+  return sortByConfidence(unique).slice(0, limit);
+}
+
+// Which rankings to search first, given a gender from the entry list.
+function genderPaths(gender: string): [string, string] {
+  const g = gender.toUpperCase();
+  const isFemale = g === "FEMALE" || g === "F" || g === "WOMEN";
+  return isFemale ? ["women", "men"] : ["men", "women"];
 }
 
 async function searchOpl(name: string, gender: string, base: string): Promise<OplResult[]> {
-  const isFemale =
-    gender.toUpperCase() === "FEMALE" ||
-    gender.toUpperCase() === "F" ||
-    gender.toUpperCase() === "WOMEN";
-  const primary = isFemale ? "women" : "men";
-  const secondary = primary === "men" ? "women" : "men";
+  const [primary, secondary] = genderPaths(gender);
   let results = await searchOplGender(name, primary, base);
   if (!results.length) results = await searchOplGender(name, secondary, base);
   return results.slice(0, 3);
@@ -602,6 +681,31 @@ export default {
         const source = url.searchParams.get("source") ?? "opl";
         const base = source === "ipf" ? IPF_BASE : OPL_BASE;
         const results = await searchOpl(name.trim(), gender, base);
+        return jsonRes({ results }, 200, c);
+      } catch {
+        return jsonRes({ results: [] }, 200, c);
+      }
+    }
+
+    // ── GET /api/candidates?name=<name>&gender=<gender>&limit=<n> ─────────
+    //
+    // Like /api/resolve, but walks every search hit instead of scoring one
+    // window of rankings rows, so people sharing a name all show up. Costs a
+    // couple of round trips per candidate, so it backs the manual picker
+    // rather than the bulk resolve.
+
+    if (url.pathname === "/api/candidates") {
+      const name = url.searchParams.get("name") ?? "";
+      const gender = url.searchParams.get("gender") ?? "MALE";
+      if (!name.trim()) return jsonRes({ results: [] }, 200, c);
+
+      const requested = Number(url.searchParams.get("limit") ?? 5);
+      const limit = Math.min(Math.max(Number.isFinite(requested) ? requested : 5, 1), 8);
+
+      try {
+        const source = url.searchParams.get("source") ?? "opl";
+        const base = source === "ipf" ? IPF_BASE : OPL_BASE;
+        const results = await findCandidates(name.trim(), gender, base, limit);
         return jsonRes({ results }, 200, c);
       } catch {
         return jsonRes({ results: [] }, 200, c);
