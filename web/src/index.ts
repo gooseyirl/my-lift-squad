@@ -1,6 +1,7 @@
 const COUCHDB_BASE = "https://couchdb.liftingcast.com";
 const OPL_BASE = "https://www.openpowerlifting.org/api";
 const IPF_BASE = "https://www.openipf.org/api";
+const IRISHPF_HOST = "irishpowerliftingfederation.com";
 const UA = "myliftsquad-web/1.0";
 
 interface Env {
@@ -131,6 +132,173 @@ async function getLiftingcastLifters(meetId: string, platformId?: string): Promi
 
   if (platformId) lifters = lifters.filter((l) => l.platformId === platformId);
   return lifters.map(({ name, flight, gender, weightClass, lot }) => ({ name, flight, gender, weightClass, lot }));
+}
+
+// ---------------------------------------------------------------------------
+// IrishPF helpers
+//
+// Competition pages on irishpowerliftingfederation.com are WordPress pages with
+// a TablePress entry list: Flight | Lot | Name | Club | Class | Session.
+// Column order is not consistent between pages (Club/Class are sometimes
+// swapped relative to the header row), so the weight class is located by
+// matching cell contents rather than trusting the header.
+// ---------------------------------------------------------------------------
+
+function parseIrishPfUrl(url: string): string | null {
+  let parsed: URL;
+  try { parsed = new URL(url); } catch { return null; }
+  const host = parsed.hostname.toLowerCase().replace(/^www\./, "");
+  if (host !== IRISHPF_HOST) return null;
+  const path = parsed.pathname.replace(/\/+$/, "");
+  if (!path || path === "/") return null;
+  return path;
+}
+
+function decodeEntities(s: string): string {
+  return s
+    .replace(/&#(\d+);/g, (_, d) => String.fromCodePoint(Number(d)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16)))
+    .replace(/&nbsp;/g, " ")
+    .replace(/&(?:lsquo|rsquo|apos);/g, "'")
+    .replace(/&(?:ldquo|rdquo|quot);/g, '"')
+    .replace(/&(?:ndash|mdash);/g, "–")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&amp;/g, "&");
+}
+
+function cellText(html: string): string {
+  return decodeEntities(html.replace(/<[^>]+>/g, " ")).replace(/\s+/g, " ").trim();
+}
+
+interface HtmlTable {
+  headers: string[];
+  rows: string[][];
+}
+
+function parseHtmlTables(html: string): HtmlTable[] {
+  const tables: HtmlTable[] = [];
+  for (const table of html.matchAll(/<table[^>]*>([\s\S]*?)<\/table>/gi)) {
+    const headers: string[] = [];
+    const rows: string[][] = [];
+    for (const row of table[1].matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/gi)) {
+      const ths = [...row[1].matchAll(/<th[^>]*>([\s\S]*?)<\/th>/gi)].map((c) => cellText(c[1]));
+      const tds = [...row[1].matchAll(/<td[^>]*>([\s\S]*?)<\/td>/gi)].map((c) => cellText(c[1]));
+      if (ths.length && !headers.length) headers.push(...ths);
+      else if (tds.length) rows.push(tds);
+    }
+    if (rows.length) tables.push({ headers, rows });
+  }
+  return tables;
+}
+
+// "F - 57", "M – 120kg+", "F - 84+", "SUPER HEAVYWEIGHT M - 120" → gender + class
+function parseIrishPfClass(cell: string): { gender: string; weightClass: string } | null {
+  const m = cell.match(/(?<![A-Za-z])([MF])\s*[-–—]\s*(\d{2,3})\s*(?:kg)?\s*(\+?)/i);
+  if (!m) return null;
+  return {
+    gender: m[1].toUpperCase() === "F" ? "FEMALE" : "MALE",
+    weightClass: m[2] + m[3],
+  };
+}
+
+const MONTHS = [
+  "january", "february", "march", "april", "may", "june",
+  "july", "august", "september", "october", "november", "december",
+];
+
+// A trailing "– 16th" style second day, which we ignore in favour of day one.
+const SECOND_DAY = String.raw`(?:\s*(?:[–—-]|and|&|to)\s*\d{1,2}(?:st|nd|rd|th)?)?`;
+// "15th – 16th of August 2026", "5th of July 2026", "16th and 17th of May 2026"
+const DAY_FIRST = new RegExp(
+  String.raw`(\d{1,2})(?:st|nd|rd|th)?${SECOND_DAY}\s*(?:of\s+)?(${MONTHS.join("|")})\s+(\d{4})`,
+  "i"
+);
+// "February 7th – 8th 2026"
+const MONTH_FIRST = new RegExp(
+  String.raw`(${MONTHS.join("|")})\s+(\d{1,2})(?:st|nd|rd|th)?${SECOND_DAY},?\s+(\d{4})`,
+  "i"
+);
+
+function matchDate(scope: string): string {
+  const dayFirst = scope.match(DAY_FIRST);
+  const monthFirst = scope.match(MONTH_FIRST);
+  let day: string, monthName: string, year: string;
+  if (dayFirst && (!monthFirst || dayFirst.index! <= monthFirst.index!)) {
+    [, day, monthName, year] = dayFirst;
+  } else if (monthFirst) {
+    [, monthName, day, year] = monthFirst;
+  } else {
+    return "";
+  }
+  const month = MONTHS.indexOf(monthName.toLowerCase()) + 1;
+  return `${year}-${String(month).padStart(2, "0")}-${day.padStart(2, "0")}`;
+}
+
+function parseIrishPfDate(text: string): string {
+  // Prefer a date near the "will take place on …" sentence over any other date
+  // that happens to appear elsewhere on the page.
+  const intro = text.match(/(?:takes?\s+place|be\s+held|will\s+run)[\s\S]{0,200}/i);
+  return (intro && matchDate(intro[0])) || matchDate(text);
+}
+
+function parseIrishPfName(html: string): string {
+  const h1 = html.match(/<h1[^>]*class="[^"]*fl-post-title[^"]*"[^>]*>([\s\S]*?)<\/h1>/i);
+  const title = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+  const raw = h1 ? cellText(h1[1]) : title ? cellText(title[1]) : "";
+  return raw
+    .replace(/\s*[–—-]\s*Irish Powerlifting Federation\s*$/i, "")
+    .replace(/\s*[–—-]\s*(Athlete Information|Entry List|Flight (Information|List)).*$/i, "")
+    .trim();
+}
+
+async function getIrishPfMeet(path: string): Promise<{ meet: MeetInfo; lifters: Lifter[] }> {
+  const res = await fetch(`https://${IRISHPF_HOST}${path}/`, {
+    headers: { Accept: "text/html", "User-Agent": UA },
+  });
+  if (!res.ok) throw new Error(`IrishPF returned ${res.status} fetching that page`);
+  const html = await res.text();
+
+  const entryTables = parseHtmlTables(html).filter(
+    (t) => t.headers.some((h) => /^name$/i.test(h)) && t.headers.some((h) => /^(flight|lot)$/i.test(h))
+  );
+
+  const lifters: Lifter[] = [];
+  for (const table of entryTables) {
+    const idx = (re: RegExp) => table.headers.findIndex((h) => re.test(h));
+    const nameIdx = idx(/^name$/i);
+    const flightIdx = idx(/^flight$/i);
+    const lotIdx = idx(/^lot$/i);
+    const sessionIdx = idx(/^session$/i);
+
+    for (const row of table.rows) {
+      const name = nameIdx >= 0 ? row[nameIdx] : "";
+      if (!name) continue;
+      const cls = row.map(parseIrishPfClass).find((c) => c !== null) ?? null;
+      lifters.push({
+        name,
+        // Fall back to the session so a flightless entry list still splits into
+        // sensibly sized squads.
+        flight: (flightIdx >= 0 ? row[flightIdx] : "") || (sessionIdx >= 0 ? row[sessionIdx] : "") || "?",
+        gender: cls?.gender ?? "MALE",
+        weightClass: cls?.weightClass ?? "",
+        lot: lotIdx >= 0 ? row[lotIdx] : "",
+      });
+    }
+  }
+
+  const text = decodeEntities(
+    html.replace(/<(script|style)[^>]*>[\s\S]*?<\/\1>/gi, "").replace(/<[^>]+>/g, " ")
+  ).replace(/\s+/g, " ");
+
+  return {
+    meet: {
+      name: parseIrishPfName(html) || "IrishPF Competition",
+      federation: "IrishPF",
+      date: parseIrishPfDate(text),
+    },
+    lifters,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -380,10 +548,35 @@ export default {
     // ── GET /api/meet?url=<liftingcastUrl> ────────────────────────────────
 
     if (url.pathname === "/api/meet") {
-      const lcUrl = url.searchParams.get("url");
-      if (!lcUrl) return jsonRes({ error: "Missing url parameter" }, 400, c);
+      const meetUrl = url.searchParams.get("url");
+      if (!meetUrl) return jsonRes({ error: "Missing url parameter" }, 400, c);
 
-      const parsed = parseLiftingcastUrl(lcUrl);
+      const irishPfPath = parseIrishPfUrl(meetUrl);
+      if (irishPfPath) {
+        try {
+          const { meet, lifters } = await getIrishPfMeet(irishPfPath);
+          if (!lifters.length) {
+            return jsonRes({ error: "No entry list found on that IrishPF page" }, 404, c);
+          }
+          return jsonRes(
+            { meet, lifters, meetId: irishPfPath, provider: "irishpf" },
+            200,
+            { ...c, "Cache-Control": "no-store" }
+          );
+        } catch (err) {
+          return jsonRes({ error: String(err) }, 502, c);
+        }
+      }
+
+      if (meetUrl.toLowerCase().includes(IRISHPF_HOST)) {
+        return jsonRes(
+          { error: "Paste the URL of a specific IrishPF competition page, e.g. .../august-open-2026/" },
+          400,
+          c
+        );
+      }
+
+      const parsed = parseLiftingcastUrl(meetUrl);
       if (!parsed) return jsonRes({ error: "Could not extract a meet ID from that URL" }, 400, c);
 
       try {
@@ -392,7 +585,7 @@ export default {
           getLiftingcastLifters(parsed.meetId, parsed.platformId),
         ]);
         if (!lifters.length) return jsonRes({ error: "No lifters found for this meet / platform" }, 404, c);
-        return jsonRes({ meet, lifters, meetId: parsed.meetId }, 200, { ...c, "Cache-Control": "no-store" });
+        return jsonRes({ meet, lifters, meetId: parsed.meetId, provider: "liftingcast" }, 200, { ...c, "Cache-Control": "no-store" });
       } catch (err) {
         return jsonRes({ error: String(err) }, 502, c);
       }
@@ -482,7 +675,7 @@ const HTML = `<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MyLiftSquad — LiftingCast Import</title>
+<title>MyLiftSquad — Competition Import</title>
 <style>
 :root {
   --bg: #0f1117;
@@ -570,7 +763,7 @@ tr:last-child td{border-bottom:none}
 .tog-btn:hover{background:var(--surface2)}
 .tog-active{background:var(--accent-dim);color:var(--accent);font-weight:600}
 @media(max-width:580px){
-  th:nth-child(3),td:nth-child(3){display:none}
+  th:nth-child(4),td:nth-child(4){display:none}
   .sum-num{font-size:1.4rem}
 }
 </style>
@@ -579,7 +772,7 @@ tr:last-child td{border-bottom:none}
 <div class="wrap">
   <header>
     <div class="logo">My<span>Lift</span>Squad</div>
-    <p>Import flights from LiftingCast</p>
+    <p>Import flights from LiftingCast or the IrishPF website</p>
   </header>
   <div id="app"></div>
 </div>
@@ -587,6 +780,7 @@ tr:last-child td{border-bottom:none}
 var st = {
   phase: 'input',
   lcUrl: '',
+  provider: 'liftingcast',
   nameOverride: '',
   meetId: null,
   meet: null,
@@ -614,6 +808,13 @@ function groupByFlight(lifters) {
   return g;
 }
 
+function formatClass(lifter) {
+  if (!lifter.weightClass) return '<span class="muted">—</span>';
+  var g = String(lifter.gender || '').toUpperCase();
+  var letter = (g === 'FEMALE' || g === 'F' || g === 'WOMEN') ? 'F' : g === 'MX' ? 'Mx' : 'M';
+  return esc(letter + ' - ' + String(lifter.weightClass).replace(/^[-–—\\s]+/, ''));
+}
+
 function metricLabel() {
   return st.metric === 'gl' ? 'GL Points' : 'Total (kg)';
 }
@@ -631,6 +832,7 @@ function buildTableRows(entries) {
     var lifter = e.lifter;
     var r = st.resolved[e.idx];
     html += '<tr><td>' + esc(lifter.name) + '</td>';
+    html += '<td>' + formatClass(lifter) + '</td>';
     if (!r) {
       html += '<td><span class="muted">—</span></td><td></td><td><span class="badge bp">Resolving…</span></td><td><span class="muted">—</span></td>';
     } else if (r.oplSlug) {
@@ -650,16 +852,16 @@ function buildTableRows(entries) {
 function buildMetricToggle() {
   var isTot = st.metric === 'total';
   return '<div class="metric-toggle">' +
-    '<button class="tog-btn' + (isTot ? ' tog-active' : '') + '" onclick="setMetric(\'total\')">Total</button>' +
-    '<button class="tog-btn' + (!isTot ? ' tog-active' : '') + '" onclick="setMetric(\'gl\')">GL Points</button>' +
+    '<button class="tog-btn' + (isTot ? ' tog-active' : '') + '" onclick="setMetric(\\'total\\')">Total</button>' +
+    '<button class="tog-btn' + (!isTot ? ' tog-active' : '') + '" onclick="setMetric(\\'gl\\')">GL Points</button>' +
     '</div>';
 }
 
 function buildSourceToggle() {
   var isOpl = st.source === 'opl';
   return '<div class="metric-toggle">' +
-    '<button class="tog-btn' + (isOpl ? ' tog-active' : '') + '" onclick="setSource(\'opl\')">OpenPowerlifting</button>' +
-    '<button class="tog-btn' + (!isOpl ? ' tog-active' : '') + '" onclick="setSource(\'ipf\')">OpenIPF</button>' +
+    '<button class="tog-btn' + (isOpl ? ' tog-active' : '') + '" onclick="setSource(\\'opl\\')">OpenPowerlifting</button>' +
+    '<button class="tog-btn' + (!isOpl ? ' tog-active' : '') + '" onclick="setSource(\\'ipf\\')">OpenIPF</button>' +
     '</div>';
 }
 
@@ -677,7 +879,7 @@ function buildFlightsHTML() {
     html += '<span class="flight-count">' + entries.length + ' athletes</span>';
     html += '</div>';
     html += '<div class="tbl-wrap"><table>';
-    html += '<thead><tr><th>Lifter</th><th>OPL Slug</th><th>OPL Name</th><th>Confidence</th><th>' + metricLabel() + '</th></tr></thead>';
+    html += '<thead><tr><th>Lifter</th><th>Class</th><th>OPL Slug</th><th>OPL Name</th><th>Confidence</th><th>' + metricLabel() + '</th></tr></thead>';
     html += '<tbody>' + buildTableRows(entries) + '</tbody>';
     html += '</table></div></div>';
   }
@@ -687,6 +889,7 @@ function buildFlightsHTML() {
 function meetLabel() {
   if (st.nameOverride) return st.nameOverride;
   if (!st.meet) return '';
+  if (st.provider === 'irishpf') return st.meet.name;
   return st.meet.federation + ' - ' + st.meet.date;
 }
 
@@ -697,17 +900,19 @@ function render() {
 
   if (st.phase === 'input') {
     html = '<div class="card">' +
-      '<div class="card-title">LiftingCast Meet</div>' +
-      '<div class="fg"><label for="lcu">LiftingCast URL</label>' +
-      '<input type="url" id="lcu" placeholder="https://liftingcast.com/meets/…" value="' + esc(st.lcUrl) + '"></div>' +
+      '<div class="card-title">Competition</div>' +
+      '<div class="fg"><label for="lcu">LiftingCast or IrishPF URL</label>' +
+      '<input type="url" id="lcu" placeholder="https://liftingcast.com/meets/…" value="' + esc(st.lcUrl) + '">' +
+      '<p class="hint">A LiftingCast meet link, or an IrishPF competition page such as ' +
+      'https://irishpowerliftingfederation.com/august-open-2026/</p></div>' +
       '<div class="fg"><label for="nom">Competition name <span style="opacity:.5">(optional)</span></label>' +
       '<input type="text" id="nom" placeholder="e.g. IrishPF 2026 June Open" value="' + esc(st.nameOverride) + '">' +
-      '<p class="hint">Squad names will be prefixed with this. Defaults to federation + date from LiftingCast.</p></div>' +
+      '<p class="hint">Squad names will be prefixed with this. Defaults to the competition name on IrishPF, or federation + date from LiftingCast.</p></div>' +
       '<button class="btn btn-primary btn-block" onclick="doFetch()">Fetch Meet</button>' +
       '</div>';
 
   } else if (st.phase === 'fetching') {
-    html = '<div class="loading"><div class="spinner"></div><br>Fetching meet data from LiftingCast…</div>';
+    html = '<div class="loading"><div class="spinner"></div><br>Fetching entry list…</div>';
 
   } else if (st.phase === 'resolving' || st.phase === 'done') {
     var meet = st.meet;
@@ -819,7 +1024,7 @@ async function doFetch() {
   var ni = document.getElementById('nom');
   if (ui) st.lcUrl = ui.value.trim();
   if (ni) st.nameOverride = ni.value.trim();
-  if (!st.lcUrl) { alert('Please enter a LiftingCast URL'); return; }
+  if (!st.lcUrl) { alert('Please enter a LiftingCast or IrishPF URL'); return; }
 
   st.phase = 'fetching';
   st.error = null;
@@ -834,6 +1039,7 @@ async function doFetch() {
 
     st.meet = data.meet;
     st.meetId = data.meetId;
+    st.provider = data.provider || 'liftingcast';
     st.lifters = data.lifters;
     st.resolved = new Array(data.lifters.length).fill(null);
     st.resolvedCount = 0;
