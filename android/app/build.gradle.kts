@@ -7,14 +7,14 @@ plugins {
 
 android {
     namespace = "com.gooseco.myliftsquad"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.gooseco.myliftsquad"
         minSdk = 26
-        targetSdk = 35
-        versionCode = 12
-        versionName = "2.5.0"
+        targetSdk = 36
+        versionCode = 13
+        versionName = "2.5.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -55,7 +55,7 @@ dependencies {
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
-    implementation("com.android.billingclient:billing-ktx:7.1.1")
+    implementation("com.android.billingclient:billing-ktx:8.3.0")
     implementation("com.google.zxing:core:3.5.3")
     implementation("com.google.android.gms:play-services-code-scanner:16.1.0")
     implementation(libs.okhttp)

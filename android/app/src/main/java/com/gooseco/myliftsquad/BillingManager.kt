@@ -74,7 +74,8 @@ class BillingManager(
             ))
             .build()
 
-        billingClient.queryProductDetailsAsync(params) { result, productDetailsList ->
+        billingClient.queryProductDetailsAsync(params) { result, queryResult ->
+            val productDetailsList = queryResult.productDetailsList
             if (result.responseCode == BillingClient.BillingResponseCode.OK &&
                 productDetailsList.isNotEmpty()) {
                 val flowParams = BillingFlowParams.newBuilder()
