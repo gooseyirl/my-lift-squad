@@ -722,10 +722,16 @@ input:focus{border-color:var(--accent)}
 .prog-fill{background:var(--accent);height:100%;border-radius:99px;transition:width .25s}
 .prog-label{font-size:.8rem;color:var(--text-muted);margin-top:5px}
 .flight-section{margin-bottom:20px}
-.flight-header{display:flex;align-items:center;gap:10px;margin-bottom:8px}
-.flight-badge{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;background:var(--accent-dim);color:var(--accent);border-radius:7px;font-weight:700;font-size:.9rem;flex-shrink:0}
-.flight-title{font-weight:600}
-.flight-count{color:var(--text-muted);font-size:.85rem}
+.flight-tabs{display:grid;gap:6px;margin-bottom:14px}
+.ftab{display:inline-flex;align-items:center;justify-content:center;gap:7px;background:var(--surface);color:var(--text-muted);border:1px solid var(--border);border-radius:var(--rs);padding:8px 12px;font-size:.875rem;font-weight:600;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:background .15s,color .15s,border-color .15s}
+.ftab:hover{background:var(--surface2);color:var(--text)}
+.ftab-active{background:var(--accent-dim);color:var(--accent);border-color:var(--accent)}
+.ftab-count{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 6px;border-radius:10px;background:var(--border);color:var(--text-muted);font-size:.7rem;font-weight:700}
+.ftab-active .ftab-count{background:var(--accent);color:#fff}
+.flight-picker{display:none;position:relative;margin-bottom:14px}
+.flight-picker::after{content:"▾";position:absolute;right:14px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--text-muted);font-size:.85rem}
+.flight-select{appearance:none;-webkit-appearance:none;width:100%;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:var(--rs);padding:10px 34px 10px 14px;font-size:.9375rem;font-weight:600;cursor:pointer;outline:none}
+.flight-select:focus{border-color:var(--accent)}
 .tbl-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
 table{width:100%;border-collapse:collapse;font-size:.875rem}
 th{text-align:left;padding:9px 14px;color:var(--text-muted);font-size:.6875rem;text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--border);background:var(--surface2)}
@@ -765,6 +771,9 @@ tr:last-child td{border-bottom:none}
 @media(max-width:580px){
   th:nth-child(4),td:nth-child(4){display:none}
   .sum-num{font-size:1.4rem}
+  /* Narrow screens fit about three tabs; beyond that, swap in the dropdown. */
+  .flight-tabs:not(.few){display:none}
+  .flight-picker:not(.few){display:block}
 }
 </style>
 </head>
@@ -785,6 +794,7 @@ var st = {
   meetId: null,
   meet: null,
   lifters: [],
+  activeFlight: null,
   resolved: [],
   resolvedCount: 0,
   bundleCodes: null,
@@ -865,24 +875,55 @@ function buildSourceToggle() {
     '</div>';
 }
 
+function flightNames() {
+  return Object.keys(groupByFlight(st.lifters)).sort();
+}
+
+function buildFlightTabs(flights, groups) {
+  // Spread the tabs as evenly as possible over as few rows as will hold them,
+  // five per row at most — so eight flights go 4+4 rather than 5+3.
+  var rows = Math.max(1, Math.ceil(flights.length / 5));
+  var cols = Math.max(1, Math.ceil(flights.length / rows));
+  // Few enough to stay legible as tabs even on a phone.
+  var few = flights.length <= 3 ? ' few' : '';
+
+  var html = '<div class="flight-tabs' + few + '" style="grid-template-columns:repeat(' + cols + ',minmax(0,1fr))">';
+  for (var i = 0; i < flights.length; i++) {
+    var f = flights[i];
+    html += '<button class="ftab' + (f === st.activeFlight ? ' ftab-active' : '') + '" onclick="setFlight(' + i + ')">';
+    html += 'Flight ' + esc(f);
+    html += '<span class="ftab-count">' + groups[f].length + '</span>';
+    html += '</button>';
+  }
+  html += '</div>';
+
+  html += '<div class="flight-picker' + few + '">';
+  html += '<select class="flight-select" onchange="setFlight(this.selectedIndex)">';
+  for (var j = 0; j < flights.length; j++) {
+    var fl = flights[j];
+    html += '<option' + (fl === st.activeFlight ? ' selected' : '') + '>';
+    html += 'Flight ' + esc(fl) + ' (' + groups[fl].length + ' athletes)';
+    html += '</option>';
+  }
+  html += '</select></div>';
+
+  return html;
+}
+
 function buildFlightsHTML() {
   var groups = groupByFlight(st.lifters);
-  var flights = Object.keys(groups).sort();
+  var flights = flightNames();
+  if (flights.indexOf(st.activeFlight) < 0) st.activeFlight = flights[0];
+
   var html = '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">' + buildSourceToggle() + buildMetricToggle() + '</div>';
-  for (var fi = 0; fi < flights.length; fi++) {
-    var f = flights[fi];
-    var entries = groups[f];
-    html += '<div class="flight-section">';
-    html += '<div class="flight-header">';
-    html += '<span class="flight-badge">' + esc(f) + '</span>';
-    html += '<span class="flight-title">Flight ' + esc(f) + '</span>';
-    html += '<span class="flight-count">' + entries.length + ' athletes</span>';
-    html += '</div>';
-    html += '<div class="tbl-wrap"><table>';
-    html += '<thead><tr><th>Lifter</th><th>Class</th><th>OPL Slug</th><th>OPL Name</th><th>Confidence</th><th>' + metricLabel() + '</th></tr></thead>';
-    html += '<tbody>' + buildTableRows(entries) + '</tbody>';
-    html += '</table></div></div>';
-  }
+  html += buildFlightTabs(flights, groups);
+
+  var entries = groups[st.activeFlight] || [];
+  html += '<div class="flight-section">';
+  html += '<div class="tbl-wrap"><table>';
+  html += '<thead><tr><th>Lifter</th><th>Class</th><th>OPL Slug</th><th>OPL Name</th><th>Confidence</th><th>' + metricLabel() + '</th></tr></thead>';
+  html += '<tbody>' + buildTableRows(entries) + '</tbody>';
+  html += '</table></div></div>';
   return html;
 }
 
@@ -996,6 +1037,11 @@ function render() {
 
 function setMetric(m) {
   st.metric = m;
+  render();
+}
+
+function setFlight(i) {
+  st.activeFlight = flightNames()[i];
   render();
 }
 
