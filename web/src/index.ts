@@ -45,6 +45,9 @@ interface OplResult {
   deadlift: string;
   federation: string;
   equipment: string;
+  // Set once the numbers above are career bests rather than a single meet's.
+  // Lets the page spot results from an older deployment and top them up.
+  bests?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -454,8 +457,9 @@ async function searchOpl(name: string, gender: string, base: string): Promise<Op
 // OPL slug direct lookup (for manual entry)
 // ---------------------------------------------------------------------------
 
-interface SlugInfo {
-  name: string;
+// The subset of an OplResult that describes a lifter's record rather than the
+// match itself, so it can be swapped wholesale onto a result or a candidate.
+interface LifterBests {
   weightClass: string;
   total: string;
   glPoints: string;
@@ -465,6 +469,8 @@ interface SlugInfo {
   federation: string;
   equipment: string;
 }
+
+type SlugInfo = LifterBests & { name: string };
 
 function parseCsvRow(line: string): string[] {
   const result: string[] = [];
@@ -529,62 +535,61 @@ async function getLifterHistory(slug: string, base: string): Promise<{ name: str
   return { name, meets };
 }
 
-async function lookupOplSlug(slug: string, base: string): Promise<SlugInfo | null> {
-  const res = await fetch(`${base}/liftercsv/${slug}`, { headers: { "User-Agent": UA } });
-  if (!res.ok) return null;
+// Places that don't count towards a personal best. Same set as the apps use in
+// PrCalculator, so every client agrees on what a "best" is.
+const DQ_PLACES = new Set(["DQ", "DD", "DNS", "NS", "G"]);
 
-  const text = await res.text();
-  const lines = text.trim().split("\n");
-  if (lines.length < 2) return null;
+const NO_BESTS: LifterBests = {
+  weightClass: "", total: "", glPoints: "", squat: "",
+  bench: "", deadlift: "", federation: "", equipment: "",
+};
 
-  const headers = lines[0].split(",");
-  const col = (name: string) => headers.indexOf(name);
-  const nameIdx = col("Name");
-  const dateIdx = col("Date");
-  const wcIdx = col("WeightClassKg");
-  const totalIdx = col("TotalKg");
-  const placeIdx = col("Place");
-  const sqIdx = col("Best3SquatKg");
-  const bchIdx = col("Best3BenchKg");
-  const dlIdx = col("Best3DeadliftKg");
-  const fedIdx = col("Federation");
-  const eqIdx = col("Equipment");
-  const glIdx = col("Goodlift");
-  if (nameIdx < 0 || totalIdx < 0) return null;
+function maxOf(meets: MeetEntry[], pick: (m: MeetEntry) => string): string {
+  let best = 0;
+  for (const m of meets) {
+    const n = parseFloat(pick(m));
+    if (n > best) best = n;
+  }
+  return best > 0 ? String(best) : "";
+}
 
-  const rows = lines.slice(1).map((l) => l.split(","));
-  const name = rows[0]?.[nameIdx] ?? slug;
-
-  const valid = rows.filter(
-    (r) => placeIdx >= 0 && r[placeIdx] !== "DQ" && totalIdx >= 0 && parseFloat(r[totalIdx]) > 0
-  );
-
-  if (!valid.length) return { name, weightClass: "", total: "", glPoints: "", squat: "", bench: "", deadlift: "", federation: "", equipment: "" };
-
-  const latest = dateIdx >= 0
-    ? [...valid].sort((a, b) => b[dateIdx].localeCompare(a[dateIdx]))[0]
-    : valid[0];
-  const latestWc = wcIdx >= 0 ? (latest[wcIdx] ?? "") : "";
-  const latestFed = fedIdx >= 0 ? (latest[fedIdx] ?? "") : "";
-  const latestEq = eqIdx >= 0 ? (latest[eqIdx] ?? "") : "";
-  const latestGl = glIdx >= 0 ? (latest[glIdx] ?? "") : "";
-
-  const bestTotal = Math.max(...valid.map((r) => parseFloat(r[totalIdx]) || 0));
-  const bestSquat = sqIdx >= 0 ? Math.max(...valid.map((r) => parseFloat(r[sqIdx]) || 0)) : 0;
-  const bestBench = bchIdx >= 0 ? Math.max(...valid.map((r) => parseFloat(r[bchIdx]) || 0)) : 0;
-  const bestDeadlift = dlIdx >= 0 ? Math.max(...valid.map((r) => parseFloat(r[dlIdx]) || 0)) : 0;
-
+// Career bests, each lift taken independently — a squat from one meet and a
+// bench from another is the right answer for "best ever". Weight class,
+// federation and equipment describe where the lifter is now, so those come from
+// the most recent meet rather than being maximised.
+function bestsFromMeets(meets: MeetEntry[]): LifterBests {
+  const valid = meets.filter((m) => !DQ_PLACES.has(m.place));
+  if (!valid.length) return NO_BESTS;
+  // getLifterHistory returns meets newest first.
+  const latest = valid[0];
   return {
-    name,
-    weightClass: latestWc,
-    total: bestTotal > 0 ? String(bestTotal) : "",
-    glPoints: latestGl,
-    squat: bestSquat > 0 ? String(bestSquat) : "",
-    bench: bestBench > 0 ? String(bestBench) : "",
-    deadlift: bestDeadlift > 0 ? String(bestDeadlift) : "",
-    federation: latestFed,
-    equipment: latestEq,
+    weightClass: latest.weightClass,
+    federation: latest.federation,
+    equipment: latest.equipment,
+    total: maxOf(valid, (m) => m.total),
+    glPoints: maxOf(valid, (m) => m.glPoints),
+    squat: maxOf(valid, (m) => m.squat),
+    bench: maxOf(valid, (m) => m.bench),
+    deadlift: maxOf(valid, (m) => m.deadlift),
   };
+}
+
+// A rankings row is a single meet — the lifter's best by Goodlift — so every
+// number on it comes from that one day. Swap in the career bests instead, and
+// keep the row as-is if the CSV can't be read.
+async function withBests(result: OplResult, base: string): Promise<OplResult> {
+  if (!result.slug) return result;
+  try {
+    const history = await getLifterHistory(result.slug, base);
+    if (history) return { ...result, ...bestsFromMeets(history.meets), bests: true };
+  } catch { /* fall back to the rankings row */ }
+  return result;
+}
+
+async function lookupOplSlug(slug: string, base: string): Promise<SlugInfo | null> {
+  const history = await getLifterHistory(slug, base);
+  if (!history) return null;
+  return { name: history.name, ...bestsFromMeets(history.meets) };
 }
 
 // ---------------------------------------------------------------------------
@@ -681,6 +686,10 @@ export default {
         const source = url.searchParams.get("source") ?? "opl";
         const base = source === "ipf" ? IPF_BASE : OPL_BASE;
         const results = await searchOpl(name.trim(), gender, base);
+        // Only the top hit reaches a card, and one CSV fetch per lifter across a
+        // whole entry list is already a lot of traffic for OPL — leave the rest
+        // of the shortlist on its rankings-row numbers.
+        if (results.length) results[0] = await withBests(results[0], base);
         return jsonRes({ results }, 200, c);
       } catch {
         return jsonRes({ results: [] }, 200, c);
@@ -706,7 +715,10 @@ export default {
         const source = url.searchParams.get("source") ?? "opl";
         const base = source === "ipf" ? IPF_BASE : OPL_BASE;
         const results = await findCandidates(name.trim(), gender, base, limit);
-        return jsonRes({ results }, 200, c);
+        // The picker compares candidates side by side, so they all need bests —
+        // this is one manual action, not a whole entry list.
+        const enriched = await Promise.all(results.map((r) => withBests(r, base)));
+        return jsonRes({ results: enriched }, 200, c);
       } catch {
         return jsonRes({ results: [] }, 200, c);
       }
@@ -723,7 +735,10 @@ export default {
         const lookupBase = src === "ipf" ? IPF_BASE : OPL_BASE;
         const info = await lookupOplSlug(slug, lookupBase);
         if (!info) return jsonRes({ error: "Lifter not found" }, 404, c);
-        return jsonRes({ slug, ...info }, 200, c);
+        // Tells the page these numbers are career bests, so it can leave an
+        // older deployment's results marked for a retry instead of trusting
+        // them. Keeps a page rollout independent of an API rollout.
+        return jsonRes({ slug, ...info, bests: true }, 200, c);
       } catch (err) {
         return jsonRes({ error: String(err) }, 502, c);
       }
