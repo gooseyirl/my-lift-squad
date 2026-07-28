@@ -4,6 +4,10 @@ android/build/
 android/app/build/
 android/local.properties
 
+# Wrangler local cache, written on deploy
+web/.wrangler/
+backend/.wrangler/
+
 # macOS
 .DS_Store
 
