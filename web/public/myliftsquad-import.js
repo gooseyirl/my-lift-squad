@@ -989,16 +989,33 @@ window.addEventListener('popstate', function () {
   if (st.panelMode) closePanel(true);
 });
 
+// Reading a competition history means the worker fetching a CSV from
+// OpenPowerlifting, so a stalled upstream used to leave the spinner turning
+// with nothing to say for itself. Give up after 15s and show why instead.
+var PANEL_TIMEOUT_MS = 15000;
+
 async function fetchPanelData(slug) {
+  var ctrl = typeof AbortController === 'function' ? new AbortController() : null;
+  var timer = setTimeout(function() { if (ctrl) ctrl.abort(); }, PANEL_TIMEOUT_MS);
   try {
-    var res = await fetch(API + '/api/lifter?slug=' + encodeURIComponent(slug) + '&source=' + st.source);
+    var url = API + '/api/lifter?slug=' + encodeURIComponent(slug) + '&source=' + st.source;
+    var res = await fetch(url, ctrl ? { signal: ctrl.signal } : undefined);
     var data = await res.json();
+    // The panel may have moved on to another athlete while this was in the
+    // air. A late answer landing under someone else's name would look exactly
+    // like their history being wrong, so drop it.
+    if (st.panelSlug !== slug) return;
     if (!res.ok) throw new Error(data.error || 'Not found');
     st.panelData = data;
     st.panelLoading = false;
   } catch(err) {
+    if (st.panelSlug !== slug) return;
     st.panelLoading = false;
-    st.panelError = err.message || String(err);
+    st.panelError = (err && err.name === 'AbortError')
+      ? sourceName(st.source) + ' took too long to answer. Close this and try again.'
+      : (err.message || String(err));
+  } finally {
+    clearTimeout(timer);
   }
   renderPanel();
 }
@@ -1068,8 +1085,10 @@ function renderPanel() {
         // next one that does gets the headline rather than leaving the row
         // with nothing but small print.
         var mLed = false;
-        for (var mi = 0; mi < mOrder.length; mi++) {
-          var mVal = formatMetric(mOrder[mi], metricRaw(m, mOrder[mi], 'meet'));
+        // Not `mi` — that is the meets counter, and `var` is function-scoped,
+        // so reusing it here walks the outer loop off the end of the list.
+        for (var mvi = 0; mvi < mOrder.length; mvi++) {
+          var mVal = formatMetric(mOrder[mvi], metricRaw(m, mOrder[mvi], 'meet'));
           if (!mVal) continue;
           html += mLed
             ? '<div style="font-size:.75rem;color:var(--text-muted);text-align:right;margin-top:2px">' + esc(mVal) + '</div>'
