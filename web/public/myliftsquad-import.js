@@ -16,6 +16,85 @@ function sourceName(src) {
   return src === 'ipf' ? 'OpenIPF' : 'OpenPowerlifting';
 }
 
+// The comparable numbers a card can carry. One is the headline (st.metric) and
+// drives sorting; the rest follow it in small type. Order here is the order
+// they appear on a card.
+//
+// `on` reads a resolved athlete (oplTotal/oplGlPoints/oplDots), `meet` reads a
+// single row of competition history, which names the same numbers differently.
+//
+// A `pref` means the number is optional and can be switched off entirely — it
+// then disappears from the cards and stops being offered as a headline or a
+// sort. Total has no pref: with every points column hidden it is the only
+// thing left to compare people by.
+var METRICS = [
+  { key: 'total', label: 'Total',     on: 'oplTotal',    meet: 'total',    unit: 'kg' },
+  { key: 'gl',    label: 'GL Points', on: 'oplGlPoints', meet: 'glPoints', unit: 'GL',   pref: 'mls_show_gl' },
+  { key: 'dots',  label: 'DOTS',      on: 'oplDots',     meet: 'dots',     unit: 'DOTS', pref: 'mls_show_dots' }
+];
+
+function metricDef(key) {
+  for (var i = 0; i < METRICS.length; i++) {
+    if (METRICS[i].key === key) return METRICS[i];
+  }
+  return METRICS[0];
+}
+
+function metricLabel(key) {
+  return metricDef(key).label;
+}
+
+function metricVisible(def) {
+  return !def.pref || st.showMetric[def.key] !== false;
+}
+
+function visibleMetrics() {
+  return METRICS.filter(metricVisible);
+}
+
+// Switching a number off while it is the headline would leave the cards
+// sorted by something they no longer show, so hand the headline back to Total.
+function normalizeMetric() {
+  if (!metricVisible(metricDef(st.metric))) {
+    st.metric = 'total';
+    savePref('mls_metric', st.metric);
+  }
+}
+
+function toggleMetricVisibility(key) {
+  var def = metricDef(key);
+  if (!def.pref) return;
+  st.showMetric[key] = !metricVisible(def);
+  savePref(def.pref, st.showMetric[key] ? '1' : '0');
+  normalizeMetric();
+  render();
+}
+
+// The selected metric first, then whatever else is switched on — what a card
+// renders top to bottom.
+function metricsByHeadline(key) {
+  var head = metricDef(key);
+  var rest = visibleMetrics().filter(function(m) { return m.key !== head.key; });
+  return metricVisible(head) ? [head].concat(rest) : rest;
+}
+
+// Kilos keep their existing formatting; points carry their name so a bare
+// number is never ambiguous once there are two kinds of them.
+function formatMetric(def, raw) {
+  var n = parseFloat(raw);
+  if (isNaN(n) || n <= 0) return '';
+  return def.unit === 'kg' ? formatKg(raw) : n.toFixed(2) + ' ' + def.unit;
+}
+
+// Reads a metric off whichever shape is to hand — a resolved athlete or a meet.
+function metricRaw(obj, def, field) {
+  return obj ? (obj[def[field]] || '') : '';
+}
+
+function metricNum(obj, def, field) {
+  return parseFloat(metricRaw(obj, def, field)) || 0;
+}
+
 // Meets saved before the source moved onto the meet carry it per athlete
 // instead; fall back to that, then to the stored preference.
 function entrySource(entry) {
@@ -146,6 +225,11 @@ var st = {
   codesLoading: false,
   shareError: null,
   metric: loadPref('mls_metric', 'total'),
+  // Both points columns start visible; switching one off is opting out.
+  showMetric: {
+    gl: loadPref('mls_show_gl', '1') !== '0',
+    dots: loadPref('mls_show_dots', '1') !== '0'
+  },
   sortCol: loadPref('mls_sort_col', 'lot') || 'lot',
   sortDir: loadPref('mls_sort_dir', 'asc'),
   // Which database this meet's numbers came from. Seeded from the saved
@@ -184,8 +268,9 @@ function profileCardHtml(c, opts) {
 
   var meta = [];
   if (c.weightClass) meta.push(esc(c.weightClass));
-  var metric = st.metric === 'gl' ? c.glPoints : c.total;
-  if (metric) meta.push(esc(metric) + (st.metric === 'gl' ? ' GL' : ''));
+  var headline = metricDef(st.metric);
+  var metric = formatMetric(headline, metricRaw(c, headline, 'meet'));
+  if (metric) meta.push(esc(metric));
   if (c.federation) meta.push(esc(c.federation));
 
   var inner = '<span class="cand-main">' +
@@ -216,7 +301,7 @@ function buildEditPanelBody() {
     html += profileCardHtml({
       name: r.oplName, slug: r.oplSlug, confidence: r.confidence,
       weightClass: r.oplWeightClass, total: r.oplTotal,
-      glPoints: r.oplGlPoints, federation: r.oplFederation
+      glPoints: r.oplGlPoints, dots: r.oplDots, federation: r.oplFederation
     }, null);
   } else {
     html += '<div class="cand-status">' +
@@ -405,10 +490,12 @@ function sortEntries(entries) {
       if (la !== lb) return dir * (la - lb);
       return a.lifter.name.localeCompare(b.lifter.name);
     }
+    // One "by the numbers" sort, following whichever metric is on display —
+    // sorting by DOTS while the cards lead with Total would read as unsorted.
     if (st.sortCol === 'total') {
-      var ra = st.resolved[a.idx], rb = st.resolved[b.idx];
-      var va = ra ? parseFloat(st.metric === 'gl' ? ra.oplGlPoints : ra.oplTotal) || 0 : 0;
-      var vb = rb ? parseFloat(st.metric === 'gl' ? rb.oplGlPoints : rb.oplTotal) || 0 : 0;
+      var def = metricDef(st.metric);
+      var va = metricNum(st.resolved[a.idx], def, 'on');
+      var vb = metricNum(st.resolved[b.idx], def, 'on');
       if (va !== vb) return dir * (va - vb);
       return a.lifter.name.localeCompare(b.lifter.name);
     }
@@ -487,7 +574,7 @@ function buildFlightsHTML() {
   html += '<div class="lifter-list">';
   html += '<div class="lifter-list-header">';
   html += '<div class="lifter-col-main">' + thSort('Lifter', 'name') + '<span style="opacity:.3;margin:0 8px">·</span>' + thSort('Class', 'class') + '<span style="opacity:.3;margin:0 8px">·</span>' + thSort('Lot', 'lot') + '</div>';
-  html += '<div class="lifter-col-right" style="display:flex;align-items:center;gap:12px"><span style="font-size:.6875rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);display:inline-flex;align-items:center;gap:4px">Confidence' + confHelpHtml() + '</span>' + thSort(st.metric === 'gl' ? 'GL Pts' : 'Total', 'total') + '</div>';
+  html += '<div class="lifter-col-right" style="display:flex;align-items:center;gap:12px"><span style="font-size:.6875rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);display:inline-flex;align-items:center;gap:4px">Confidence' + confHelpHtml() + '</span>' + thSort(metricLabel(st.metric), 'total') + '</div>';
   html += '</div>';
   html += buildTableRows(sortEntries(entries));
   html += '</div></div>';
@@ -653,11 +740,32 @@ function settingsBodyHtml() {
     '</div>' +
     '<p class="hint">OpenIPF only includes IPF-affiliated competitions.</p>');
 
-  html += group('Display Metric',
-    '<div class="src-ctrl">' +
-    '<button class="src-opt' + (st.metric === 'total' ? ' active' : '') + '" onclick="setMetric(\'total\')">Total</button>' +
-    '<button class="src-opt' + (st.metric === 'gl' ? ' active' : '') + '" onclick="setMetric(\'gl\')">GL Points</button>' +
-    '</div>');
+  // Independent on/off switches, so these are chips rather than one of the
+  // segmented .src-ctrl pills — those read as "pick exactly one".
+  html += group('Show Points',
+    '<div class="chip-ctrl">' +
+    METRICS.filter(function(m) { return m.pref; }).map(function(m) {
+      var on = metricVisible(m);
+      return '<button class="chip-toggle' + (on ? ' on' : '') +
+        '" role="switch" aria-checked="' + (on ? 'true' : 'false') +
+        '" onclick="toggleMetricVisibility(\'' + m.key + '\')">' +
+        '<span class="chip-tick" aria-hidden="true">' + (on ? '✓' : '') + '</span>' + m.label + '</button>';
+    }).join('') +
+    '</div>' +
+    '<p class="hint">Hide a scoring column to keep the cards uncluttered. Total is always shown.</p>');
+
+  // Nothing to choose between when Total is the only number left.
+  var pickable = visibleMetrics();
+  if (pickable.length > 1) {
+    html += group('Display Metric',
+      '<div class="src-ctrl">' +
+      pickable.map(function(m) {
+        return '<button class="src-opt' + (st.metric === m.key ? ' active' : '') +
+          '" onclick="setMetric(\'' + m.key + '\')">' + m.label + '</button>';
+      }).join('') +
+      '</div>' +
+      '<p class="hint">Leads each card and sets what the numeric sort uses.</p>');
+  }
 
   if (st.saved) {
     html += group('Sort By',
@@ -665,7 +773,7 @@ function settingsBodyHtml() {
       '<button class="src-opt' + (st.sortCol === 'lot' ? ' active' : '') + '" onclick="setSort(\'lot\')">Lot' + arrow('lot') + '</button>' +
       '<button class="src-opt' + (st.sortCol === 'name' ? ' active' : '') + '" onclick="setSort(\'name\')">Name' + arrow('name') + '</button>' +
       '<button class="src-opt' + (st.sortCol === 'class' ? ' active' : '') + '" onclick="setSort(\'class\')">Class' + arrow('class') + '</button>' +
-      '<button class="src-opt' + (st.sortCol === 'total' ? ' active' : '') + '" onclick="setSort(\'total\')">' + (st.metric === 'gl' ? 'GL Points' : 'Total') + arrow('total') + '</button>' +
+      '<button class="src-opt' + (st.sortCol === 'total' ? ' active' : '') + '" onclick="setSort(\'total\')">' + metricLabel(st.metric) + arrow('total') + '</button>' +
       '</div>');
   }
 
@@ -909,13 +1017,18 @@ function renderPanel() {
           html += '</div>';
         }
         html += '</div><div class="meet-row-right">';
-        var mTotal = parseFloat(m.total || ''), mGl = parseFloat(m.glPoints || '');
-        if (st.metric === 'gl') {
-          if (mGl > 0) html += '<div class="ath-total">' + esc(mGl.toFixed(2)) + ' GL</div>';
-          if (mTotal > 0) html += '<div style="font-size:.75rem;color:var(--text-muted);text-align:right;margin-top:2px">' + esc(formatKg(m.total)) + '</div>';
-        } else {
-          if (mTotal > 0) html += '<div class="ath-total">' + esc(formatKg(m.total)) + '</div>';
-          if (mGl > 0) html += '<div style="font-size:.75rem;color:var(--text-muted);text-align:right;margin-top:2px">' + esc(mGl.toFixed(2)) + ' GL</div>';
+        var mOrder = metricsByHeadline(st.metric);
+        // The chosen metric leads, but if this meet has no figure for it the
+        // next one that does gets the headline rather than leaving the row
+        // with nothing but small print.
+        var mLed = false;
+        for (var mi = 0; mi < mOrder.length; mi++) {
+          var mVal = formatMetric(mOrder[mi], metricRaw(m, mOrder[mi], 'meet'));
+          if (!mVal) continue;
+          html += mLed
+            ? '<div style="font-size:.75rem;color:var(--text-muted);text-align:right;margin-top:2px">' + esc(mVal) + '</div>'
+            : '<div class="ath-total">' + esc(mVal) + '</div>';
+          mLed = true;
         }
         if (m.place) html += '<div class="meet-place">' + esc(formatPlace(m.place)) + '</div>';
         html += '</div></div>';
@@ -964,18 +1077,19 @@ function buildAthleteCard(lifter, r) {
   }
   html += '</div>';
   if (r && r.oplSlug) {
-    var totalNum = parseFloat(r.oplTotal || '');
-    var glNum = parseFloat(r.oplGlPoints || '');
-    var hasTotal = totalNum > 0;
-    var hasGl = glNum > 0;
-    if (hasTotal || hasGl) {
+    var shown = [];
+    var order = metricsByHeadline(st.metric);
+    for (var mi = 0; mi < order.length; mi++) {
+      var val = formatMetric(order[mi], metricRaw(r, order[mi], 'on'));
+      if (val) shown.push(val);
+    }
+    if (shown.length) {
       html += '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0">';
-      if (st.metric === 'gl') {
-        if (hasGl) html += '<div class="ath-total">' + esc(glNum.toFixed(2)) + ' GL</div>';
-        if (hasTotal) html += '<div style="font-size:.75rem;color:var(--text-muted)">' + esc(formatKg(r.oplTotal)) + '</div>';
-      } else {
-        if (hasTotal) html += '<div class="ath-total">' + esc(formatKg(r.oplTotal)) + '</div>';
-        if (hasGl) html += '<div style="font-size:.75rem;color:var(--text-muted)">' + esc(glNum.toFixed(2)) + ' GL</div>';
+      // Whatever comes first leads — if this athlete has no figure for the
+      // chosen metric, the next one that does takes the headline.
+      html += '<div class="ath-total">' + esc(shown[0]) + '</div>';
+      for (var si2 = 1; si2 < shown.length; si2++) {
+        html += '<div style="font-size:.75rem;color:var(--text-muted)">' + esc(shown[si2]) + '</div>';
       }
       html += '</div>';
     }
@@ -1227,7 +1341,8 @@ async function doFetch() {
 
 // Bumped when the shape of a card's numbers changes, so stored meets can be
 // spotted and topped up rather than silently showing stale figures.
-var BESTS_VERSION = 2;
+// 3 adds DOTS, which meets saved or shared before it have no figure for.
+var BESTS_VERSION = 3;
 var backfillToken = 0;
 
 // Cards built before this version hold one meet's numbers — the lifter's best
@@ -1263,6 +1378,7 @@ async function backfillBests() {
             r.oplWeightClass = data.weightClass || '';
             r.oplTotal = data.total || '';
             r.oplGlPoints = data.glPoints || '';
+            r.oplDots = data.dots || '';
             r.oplSquat = data.squat || '';
             r.oplBench = data.bench || '';
             r.oplDeadlift = data.deadlift || '';
@@ -1295,10 +1411,10 @@ async function doResolveAll() {
         .then(function(r) { return r.json(); })
         .then(function(d) {
           var best = d.results && d.results[0];
-          return { idx: idx, oplName: best ? best.name : '', oplSlug: best ? best.slug : '', confidence: best ? best.confidence : 'none', oplWeightClass: best ? best.weightClass : '', oplTotal: best ? best.total : '', oplGlPoints: best ? (best.glPoints || '') : '', oplSquat: best ? best.squat : '', oplBench: best ? best.bench : '', oplDeadlift: best ? best.deadlift : '', oplFederation: best ? best.federation : '', oplEquipment: best ? best.equipment : '', dataSource: best && best.slug ? st.source : '', bestsV: best && best.bests ? BESTS_VERSION : 0 };
+          return { idx: idx, oplName: best ? best.name : '', oplSlug: best ? best.slug : '', confidence: best ? best.confidence : 'none', oplWeightClass: best ? best.weightClass : '', oplTotal: best ? best.total : '', oplGlPoints: best ? (best.glPoints || '') : '', oplDots: best ? (best.dots || '') : '', oplSquat: best ? best.squat : '', oplBench: best ? best.bench : '', oplDeadlift: best ? best.deadlift : '', oplFederation: best ? best.federation : '', oplEquipment: best ? best.equipment : '', dataSource: best && best.slug ? st.source : '', bestsV: best && best.bests ? BESTS_VERSION : 0 };
         })
         .catch(function() {
-          return { idx: idx, oplName: '', oplSlug: '', confidence: 'none', oplWeightClass: '', oplTotal: '', oplGlPoints: '', oplSquat: '', oplBench: '', oplDeadlift: '', oplFederation: '', oplEquipment: '', dataSource: '' };
+          return { idx: idx, oplName: '', oplSlug: '', confidence: 'none', oplWeightClass: '', oplTotal: '', oplGlPoints: '', oplDots: '', oplSquat: '', oplBench: '', oplDeadlift: '', oplFederation: '', oplEquipment: '', dataSource: '' };
         });
     });
     var results = await Promise.all(promises);
@@ -1429,6 +1545,7 @@ function applyProfile(idx, c) {
     oplWeightClass: c.weightClass || '',
     oplTotal: c.total || '',
     oplGlPoints: c.glPoints || '',
+    oplDots: c.dots || '',
     oplSquat: c.squat || '',
     oplBench: c.bench || '',
     oplDeadlift: c.deadlift || '',
@@ -1463,7 +1580,7 @@ function clearMatch(idx) {
   // Used when an auto-match found a different person with the same name.
   st.resolved[idx] = {
     idx: idx, oplName: '', oplSlug: '', confidence: 'cleared',
-    oplWeightClass: '', oplTotal: '', oplGlPoints: '', oplSquat: '',
+    oplWeightClass: '', oplTotal: '', oplGlPoints: '', oplDots: '', oplSquat: '',
     oplBench: '', oplDeadlift: '', oplFederation: '', oplEquipment: '', dataSource: ''
   };
   st.saved = false;
@@ -1503,6 +1620,7 @@ async function doLookup(idx) {
       oplWeightClass: data.weightClass || '',
       oplTotal: data.total || '',
       oplGlPoints: data.glPoints || '',
+      oplDots: data.dots || '',
       oplSquat: data.squat || '',
       oplBench: data.bench || '',
       oplDeadlift: data.deadlift || '',
@@ -1562,3 +1680,5 @@ function toggleTheme() {
   applyTheme(next);
 }
 applyTheme(localStorage.getItem('mls_theme') === 'neo' ? 'neo' : 'classic');
+// A stored metric may name a column that has since been switched off.
+normalizeMetric();

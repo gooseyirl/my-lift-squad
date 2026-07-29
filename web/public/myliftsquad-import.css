@@ -251,6 +251,16 @@ tr:last-child td{border-bottom:none}
 .src-opt{padding:5px 13px;font-size:.8125rem;font-weight:600;cursor:pointer;border:none;background:transparent;color:var(--text-muted);border-radius:99px;transition:background .18s,color .18s,box-shadow .18s;line-height:1.4;white-space:nowrap}
 .src-opt:hover{color:var(--text)}
 .src-opt.active{background:var(--accent);color:#fff;box-shadow:0 0 0 1px rgba(108,143,255,.4),0 2px 8px rgba(108,143,255,.25)}
+/* Show/hide chips — each one is its own on/off switch, so they sit apart
+   rather than inside a shared pill track like .src-ctrl, which would read as
+   "pick exactly one". */
+.chip-ctrl{display:flex;flex-wrap:wrap;gap:8px}
+.chip-toggle{display:inline-flex;align-items:center;gap:6px;padding:5px 13px;font-size:.8125rem;font-weight:600;cursor:pointer;background:var(--surface2);color:var(--text-muted);border:1px solid var(--border);border-radius:99px;line-height:1.4;white-space:nowrap;transition:background .18s,color .18s,border-color .18s}
+.chip-toggle:hover{color:var(--text);border-color:var(--accent)}
+.chip-toggle.on{background:var(--accent-dim);color:var(--text);border-color:var(--accent)}
+/* Reserves the tick's width whether or not it is showing, so a chip doesn't
+   change size — and the row doesn't reflow — as it is switched on and off. */
+.chip-tick{display:inline-block;width:9px;text-align:center;font-size:.75rem;color:var(--accent)}
 /* Metric toggle — lighter, tab/underline style */
 .metric-ctrl{display:inline-flex;gap:0;border-bottom:1px solid var(--border)}
 .metric-opt{padding:5px 12px;font-size:.8125rem;font-weight:500;cursor:pointer;border:none;background:transparent;color:var(--text-muted);border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .15s,border-color .15s;line-height:1.4;white-space:nowrap}

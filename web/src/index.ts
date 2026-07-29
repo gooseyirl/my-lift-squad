@@ -40,6 +40,7 @@ interface OplResult {
   weightClass: string;
   total: string;
   glPoints: string;
+  dots: string;
   squat: string;
   bench: string;
   deadlift: string;
@@ -370,6 +371,10 @@ function rowToResult(row: unknown[], name: string): OplResult | null {
     weightClass: row.length > 18 ? String(row[18] ?? "") : "",
     total: row.length > 22 ? String(row[22] ?? "") : "",
     glPoints: row.length > 23 ? String(row[23] ?? "") : "",
+    // A rankings row carries Goodlift only — it ends at index 23, with no Dots
+    // anywhere on it. withBests() fills this in from the lifter CSV, which does
+    // have the column; a row that never gets that far simply has no DOTS.
+    dots: "",
     squat: row.length > 19 ? String(row[19] ?? "") : "",
     bench: row.length > 20 ? String(row[20] ?? "") : "",
     deadlift: row.length > 21 ? String(row[21] ?? "") : "",
@@ -463,6 +468,7 @@ interface LifterBests {
   weightClass: string;
   total: string;
   glPoints: string;
+  dots: string;
   squat: string;
   bench: string;
   deadlift: string;
@@ -495,7 +501,7 @@ interface MeetEntry {
   date: string; meet: string; federation: string; event: string;
   equipment: string; division: string; bodyweight: string;
   weightClass: string; squat: string; bench: string; deadlift: string;
-  total: string; glPoints: string; place: string;
+  total: string; glPoints: string; dots: string; place: string;
 }
 
 async function getLifterHistory(slug: string, base: string): Promise<{ name: string; meets: MeetEntry[] } | null> {
@@ -511,6 +517,7 @@ async function getLifterHistory(slug: string, base: string): Promise<{ name: str
   const divIdx = col("Division"), bwIdx = col("BodyweightKg"), wcIdx = col("WeightClassKg");
   const sqIdx = col("Best3SquatKg"), bchIdx = col("Best3BenchKg"), dlIdx = col("Best3DeadliftKg");
   const totalIdx = col("TotalKg"), glIdx = col("Goodlift"), placeIdx = col("Place");
+  const dotsIdx = col("Dots");
   const rows = lines.slice(1).map(parseCsvRow);
   const name = nameIdx >= 0 ? (rows[0]?.[nameIdx] ?? slug) : slug;
   const meets: MeetEntry[] = rows
@@ -529,6 +536,7 @@ async function getLifterHistory(slug: string, base: string): Promise<{ name: str
       deadlift: dlIdx >= 0 ? r[dlIdx] : "",
       total: totalIdx >= 0 ? r[totalIdx] : "",
       glPoints: glIdx >= 0 ? r[glIdx] : "",
+      dots: dotsIdx >= 0 ? r[dotsIdx] : "",
       place: placeIdx >= 0 ? r[placeIdx] : "",
     }))
     .sort((a, b) => b.date.localeCompare(a.date));
@@ -540,7 +548,7 @@ async function getLifterHistory(slug: string, base: string): Promise<{ name: str
 const DQ_PLACES = new Set(["DQ", "DD", "DNS", "NS", "G"]);
 
 const NO_BESTS: LifterBests = {
-  weightClass: "", total: "", glPoints: "", squat: "",
+  weightClass: "", total: "", glPoints: "", dots: "", squat: "",
   bench: "", deadlift: "", federation: "", equipment: "",
 };
 
@@ -568,6 +576,7 @@ function bestsFromMeets(meets: MeetEntry[]): LifterBests {
     equipment: latest.equipment,
     total: maxOf(valid, (m) => m.total),
     glPoints: maxOf(valid, (m) => m.glPoints),
+    dots: maxOf(valid, (m) => m.dots),
     squat: maxOf(valid, (m) => m.squat),
     bench: maxOf(valid, (m) => m.bench),
     deadlift: maxOf(valid, (m) => m.deadlift),
