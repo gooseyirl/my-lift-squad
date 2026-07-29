@@ -377,3 +377,18 @@ html.theme-neo .lc-cat{font-weight:700}
 /* Toggle sits on a light surface now — keep it legible */
 html.theme-neo .theme-toggle{background:var(--surface);color:var(--text-muted);border-color:var(--border)}
 html.theme-neo .app-version{color:var(--text-muted);opacity:.7}
+
+/* ═══════════════════════════════════════════════════════════════
+   Store badges — official Apple and Google artwork, unaltered as
+   both vendors' brand guidelines require. Google's asset ships with
+   transparent padding baked in, so it renders taller and gets pulled
+   back with negative margins to sit at the same optical height as
+   Apple's.
+   ═══════════════════════════════════════════════════════════════ */
+.store-links{margin-top:56px;padding-top:30px;border-top:1px solid var(--border);text-align:center}
+.store-links-label{font-size:.8125rem;color:var(--text-muted);margin-bottom:14px}
+.store-badges{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap}
+.store-badges a{display:inline-flex;border-radius:8px;outline-offset:3px;transition:opacity .15s}
+.store-badges a:hover{opacity:.82}
+.badge-apple{height:44px;width:auto;display:block}
+.badge-google{height:66px;width:auto;display:block;margin:-11px -10px}
