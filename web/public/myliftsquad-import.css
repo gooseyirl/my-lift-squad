@@ -52,6 +52,13 @@ input.meet-name-input:focus{border-color:var(--accent);background:var(--bg)}
 .prog-fill{background:var(--accent);height:100%;border-radius:99px;transition:width .25s}
 .prog-label{font-size:.8rem;color:var(--text-muted);margin-top:5px}
 .flight-section{margin-bottom:20px}
+/* Headings for the all-flights view. The tabbed view has no use for them —
+   its heading is the selected tab — so they only render on one scroll, where
+   they are what separates one flight from the next. */
+.flight-header{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.flight-badge{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;background:var(--accent-dim);color:var(--accent);border-radius:7px;font-weight:700;font-size:.9rem;flex-shrink:0}
+.flight-title{font-weight:600}
+.flight-count{color:var(--text-muted);font-size:.85rem}
 .flight-tabs{display:grid;gap:6px;margin-bottom:14px}
 .ftab{display:inline-flex;align-items:center;justify-content:center;gap:7px;background:var(--surface);color:var(--text-muted);border:1px solid var(--border);border-radius:var(--rs);padding:8px 12px;font-size:.875rem;font-weight:600;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:background .15s,color .15s,border-color .15s}
 .ftab:hover{background:var(--surface2);color:var(--text)}
@@ -387,6 +394,7 @@ html.theme-neo .lc-cat{font-weight:700}
 /* Toggle sits on a light surface now — keep it legible */
 html.theme-neo .theme-toggle{background:var(--surface);color:var(--text-muted);border-color:var(--border)}
 html.theme-neo .app-version{color:var(--text-muted);opacity:.7}
+html.theme-neo .flight-badge{font-weight:700}
 
 /* ═══════════════════════════════════════════════════════════════
    Store badges — official Apple and Google artwork, unaltered as

@@ -227,6 +227,9 @@ var st = {
   codesLoading: false,
   shareError: null,
   metric: loadPref('mls_metric', 'total'),
+  // 'single' shows one flight behind tabs, 'all' puts every flight on one
+  // scroll under its own heading.
+  flightView: loadPref('mls_flight_view', 'single'),
   // Both points columns start visible; switching one off is opting out.
   showMetric: {
     gl: loadPref('mls_show_gl', '1') !== '0',
@@ -531,6 +534,31 @@ function setFlight(i) {
   render();
 }
 
+function setFlightView(v) {
+  st.flightView = v;
+  savePref('mls_flight_view', v);
+  render();
+}
+
+function showingAllFlights() {
+  return st.flightView === 'all';
+}
+
+// Only earns its place when the flights aren't split across tabs — on a single
+// scroll it is the thing that keeps one flight from bleeding into the next.
+function flightHeaderHtml(f, count) {
+  return '<div class="flight-header">' +
+    '<span class="flight-badge">' + esc(f) + '</span>' +
+    '<span class="flight-title">Flight ' + esc(f) + '</span>' +
+    '<span class="flight-count">' + count + (count === 1 ? ' athlete' : ' athletes') + '</span>' +
+    '</div>';
+}
+
+// Which flights to lay out: all of them, or just the one the tabs have picked.
+function flightsToRender(flights) {
+  return showingAllFlights() ? flights : [st.activeFlight];
+}
+
 // Tabs for picking one flight at a time, with a dropdown fallback on phones.
 // Also normalises st.activeFlight, so callers can rely on it afterwards.
 function buildFlightNav(groups, flights) {
@@ -566,20 +594,29 @@ function buildFlightNav(groups, flights) {
   return html;
 }
 
+function lifterListHeaderHtml() {
+  return '<div class="lifter-list-header">' +
+    '<div class="lifter-col-main">' + thSort('Lifter', 'name') + '<span style="opacity:.3;margin:0 8px">·</span>' + thSort('Class', 'class') + '<span style="opacity:.3;margin:0 8px">·</span>' + thSort('Lot', 'lot') + '</div>' +
+    '<div class="lifter-col-right" style="display:flex;align-items:center;gap:12px"><span style="font-size:.6875rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);display:inline-flex;align-items:center;gap:4px">Confidence' + confHelpHtml() + '</span>' + thSort(metricLabel(st.metric), 'total') + '</div>' +
+    '</div>';
+}
+
 function buildFlightsHTML() {
   var groups = groupByFlight(st.lifters);
   var flights = Object.keys(groups).sort();
-  var html = buildFlightNav(groups, flights);
-  var entries = groups[st.activeFlight] || [];
+  // Normalises st.activeFlight, so it has to run before the flights are picked.
+  var html = showingAllFlights() ? '' : buildFlightNav(groups, flights);
 
-  html += '<div class="flight-section">';
-  html += '<div class="lifter-list">';
-  html += '<div class="lifter-list-header">';
-  html += '<div class="lifter-col-main">' + thSort('Lifter', 'name') + '<span style="opacity:.3;margin:0 8px">·</span>' + thSort('Class', 'class') + '<span style="opacity:.3;margin:0 8px">·</span>' + thSort('Lot', 'lot') + '</div>';
-  html += '<div class="lifter-col-right" style="display:flex;align-items:center;gap:12px"><span style="font-size:.6875rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);display:inline-flex;align-items:center;gap:4px">Confidence' + confHelpHtml() + '</span>' + thSort(metricLabel(st.metric), 'total') + '</div>';
-  html += '</div>';
-  html += buildTableRows(sortEntries(entries));
-  html += '</div></div>';
+  var shown = flightsToRender(flights);
+  for (var fi = 0; fi < shown.length; fi++) {
+    var entries = groups[shown[fi]] || [];
+    html += '<div class="flight-section">';
+    if (showingAllFlights()) html += flightHeaderHtml(shown[fi], entries.length);
+    html += '<div class="lifter-list">';
+    html += lifterListHeaderHtml();
+    html += buildTableRows(sortEntries(entries));
+    html += '</div></div>';
+  }
   return html;
 }
 
@@ -741,6 +778,13 @@ function settingsBodyHtml() {
     '<button class="src-opt' + (st.source === 'ipf' ? ' active' : '') + '" onclick="setOplSource(\'ipf\')">OpenIPF</button>' +
     '</div>' +
     '<p class="hint">OpenIPF only includes IPF-affiliated competitions.</p>');
+
+  html += group('Flights',
+    '<div class="src-ctrl">' +
+    '<button class="src-opt' + (st.flightView === 'single' ? ' active' : '') + '" onclick="setFlightView(\'single\')">One at a time</button>' +
+    '<button class="src-opt' + (st.flightView === 'all' ? ' active' : '') + '" onclick="setFlightView(\'all\')">All flights</button>' +
+    '</div>' +
+    '<p class="hint">All flights puts the whole meet on one scroll, each flight under its own heading.</p>');
 
   // Independent on/off switches, so these are chips rather than one of the
   // segmented .src-ctrl pills — those read as "pick exactly one".
@@ -1103,14 +1147,19 @@ function buildAthleteCard(lifter, r) {
 function buildSquadView() {
   var groups = groupByFlight(st.lifters);
   var flights = Object.keys(groups).sort();
-  var html = buildFlightNav(groups, flights);
-  var entries = sortEntries(groups[st.activeFlight] || []);
+  // Normalises st.activeFlight, so it has to run before the flights are picked.
+  var html = showingAllFlights() ? '' : buildFlightNav(groups, flights);
 
-  html += '<div class="flight-section">';
-  for (var i = 0; i < entries.length; i++) {
-    html += buildAthleteCard(entries[i].lifter, st.resolved[entries[i].idx]);
+  var shown = flightsToRender(flights);
+  for (var fi = 0; fi < shown.length; fi++) {
+    var entries = sortEntries(groups[shown[fi]] || []);
+    html += '<div class="flight-section">';
+    if (showingAllFlights()) html += flightHeaderHtml(shown[fi], entries.length);
+    for (var i = 0; i < entries.length; i++) {
+      html += buildAthleteCard(entries[i].lifter, st.resolved[entries[i].idx]);
+    }
+    html += '</div>';
   }
-  html += '</div>';
   return html;
 }
 
