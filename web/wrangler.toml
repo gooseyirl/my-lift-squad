@@ -10,11 +10,19 @@ preview_urls = false
 [assets]
 directory = "./public"
 
-# myliftsquad.com is the tool's public home; wrangler creates and keeps the DNS
-# record in the Cloudflare zone. The workers.dev URL stays live as a fallback.
-[[routes]]
-pattern = "myliftsquad.com"
-custom_domain = true
+# myliftsquad.com is the tool's public home, but the zone lives in a different
+# Cloudflare account (paulwalshirl@) than this worker (gooseyirl@), and a worker
+# can only bind a hostname in its own account. Binding it fails every deploy
+# with a red "triggers failed" error, so it stays commented out and a redirect
+# rule on the zone forwards to workers.dev in the meantime.
+#
+# Cloudflare blocks account transfers for the first 10 days after registration
+# (registered 2026-07-29), so from 2026-08-08: move the domain to gooseyirl@,
+# uncomment this, deploy, and delete the redirect rule.
+#
+# [[routes]]
+# pattern = "myliftsquad.com"
+# custom_domain = true
 
 [[kv_namespaces]]
 binding = "SHARES"
