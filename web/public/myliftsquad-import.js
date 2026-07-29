@@ -30,7 +30,9 @@ function sourceName(src) {
 var METRICS = [
   { key: 'total', label: 'Total',     on: 'oplTotal',    meet: 'total',    unit: 'kg' },
   { key: 'gl',    label: 'GL Points', on: 'oplGlPoints', meet: 'glPoints', unit: 'GL',   pref: 'mls_show_gl' },
-  { key: 'dots',  label: 'DOTS',      on: 'oplDots',     meet: 'dots',     unit: 'DOTS', pref: 'mls_show_dots' }
+  // "Dots" rather than "DOTS": it is a name, not an initialism, so that is how
+  // OpenPowerlifting writes it — and how the Android app already labels it.
+  { key: 'dots',  label: 'Dots',      on: 'oplDots',     meet: 'dots',     unit: 'Dots', pref: 'mls_show_dots' }
 ];
 
 function metricDef(key) {
