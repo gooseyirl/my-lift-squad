@@ -948,13 +948,15 @@ function settingsBodyHtml() {
   // Nothing to clear until something is marked, so the group stays out of the
   // way until it has a job.
   if (st.highlights.length) {
-    html += group('Highlighted Athletes',
+    // The count belongs to the group, not to either button — it is the same
+    // number for both, and repeating it made them read as different totals.
+    html += group('Highlighted Athletes (' + st.highlights.length + ')',
       '<div class="src-ctrl">' +
       '<button class="src-opt' + (!st.onlyHighlighted ? ' active' : '') + '" onclick="setOnlyHighlighted(false)">Show all</button>' +
-      '<button class="src-opt' + (st.onlyHighlighted ? ' active' : '') + '" onclick="setOnlyHighlighted(true)">Highlighted only (' + st.highlights.length + ')</button>' +
+      '<button class="src-opt' + (st.onlyHighlighted ? ' active' : '') + '" onclick="setOnlyHighlighted(true)">Highlighted only</button>' +
       '</div>' +
       '<div class="src-ctrl" style="margin-top:8px">' +
-      '<button class="src-opt" onclick="clearHighlights()">Clear all (' + st.highlights.length + ')</button>' +
+      '<button class="src-opt" onclick="clearHighlights()">Clear all highlighted</button>' +
       '</div>' +
       '<p class="hint">Flight counts follow the filter. Highlights are kept on this device for this meet, and are not part of a share link.</p>');
   }
