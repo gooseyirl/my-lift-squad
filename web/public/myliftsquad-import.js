@@ -541,11 +541,29 @@ async function buildBundleCodes() {
   return codes;
 }
 
+// Back should dismiss the panel, not leave the meet. Opening pushes a history
+// entry, back pops it and closes the panel, and closing from the UI takes the
+// entry away again so one back press doesn't leave the page.
+//
+// `window.history` is spelled out because saveToHistory() and friends declare a
+// local `var history` for the saved-meets list.
+var panelHistoryEntry = false;
+
+function pushPanelHistory() {
+  // One entry per open, however many times the panel changes mode while there.
+  if (panelHistoryEntry) return;
+  try {
+    window.history.pushState({ mlsPanel: true }, '');
+    panelHistoryEntry = true;
+  } catch (e) { /* history unavailable — the panel still works, back won't */ }
+}
+
 function showPanel() {
   document.getElementById('panel-overlay').classList.add('open');
   document.getElementById('panel').classList.add('open');
   document.body.classList.add('panel-open');
   document.body.style.overflow = 'hidden';
+  pushPanelHistory();
   renderPanel();
 }
 
@@ -785,15 +803,13 @@ function openPanel(slug, name) {
   st.panelData = null;
   st.panelLoading = true;
   st.panelError = null;
-  document.getElementById('panel-overlay').classList.add('open');
-  document.getElementById('panel').classList.add('open');
-  document.body.classList.add('panel-open');
-  document.body.style.overflow = 'hidden';
-  renderPanel();
+  showPanel();
   fetchPanelData(slug);
 }
 
-function closePanel() {
+// fromBack is set when the browser already popped our entry, so we don't try
+// to pop it a second time and send the user off the page.
+function closePanel(fromBack) {
   document.getElementById('panel-overlay').classList.remove('open');
   document.getElementById('panel').classList.remove('open');
   document.body.classList.remove('panel-open');
@@ -805,7 +821,19 @@ function closePanel() {
     // Redraw so the edited row drops its highlight and shows the new match.
     render();
   }
+  if (panelHistoryEntry && fromBack !== true) {
+    panelHistoryEntry = false;
+    window.history.back();
+  } else {
+    panelHistoryEntry = false;
+  }
 }
+
+window.addEventListener('popstate', function () {
+  // Guard on the panel actually being open: closePanel's own history.back()
+  // fires this too, and by then there is nothing left to close.
+  if (st.panelMode) closePanel(true);
+});
 
 async function fetchPanelData(slug) {
   try {
