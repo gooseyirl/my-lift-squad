@@ -159,6 +159,7 @@ function loadFromHistory(meetId) {
   if (!entry) return;
   st.phase = 'done';
   st.meetId = entry.meetId;
+  loadHighlights();
   st.lcUrl = entry.lcUrl;
   st.nameOverride = entry.nameOverride || '';
   st.meet = entry.meet;
@@ -235,6 +236,9 @@ var st = {
     gl: loadPref('mls_show_gl', '1') !== '0',
     dots: loadPref('mls_show_dots', '1') !== '0'
   },
+  // Marked lifters for the meet on screen, refilled by loadHighlights() each
+  // time a meet is opened.
+  highlights: [],
   sortCol: loadPref('mls_sort_col', 'lot') || 'lot',
   sortDir: loadPref('mls_sort_dir', 'asc'),
   // Which database this meet's numbers came from. Seeded from the saved
@@ -395,9 +399,10 @@ function buildTableRows(entries) {
 
     // Editing happens in the slide-out panel; the row just marks itself as the
     // one being edited.
-    html += '<div class="lifter-row' + (isEditing ? ' lifter-row-editing' : '') + '">';
+    html += '<div class="lifter-row' + (isEditing ? ' lifter-row-editing' : '') +
+      (isHighlighted(lifter) ? ' lifter-row-hl' : '') + '">';
     html += '<div class="lifter-col-main">';
-    html += '<div class="lifter-row-name">' + esc(lifter.name) + lcCatHtml(lifter) + '</div>';
+    html += '<div class="lifter-row-name">' + highlightStarHtml(lifter, e.idx) + esc(lifter.name) + lcCatHtml(lifter) + '</div>';
     html += lcLotLineHtml(lifter);
 
     if (!r) {
@@ -532,6 +537,83 @@ function flightNames() {
 function setFlight(i) {
   st.activeFlight = flightNames()[i];
   render();
+}
+
+// ── Highlights ──────────────────────────────────────────────────────────────
+// A commentator or coach marking the handful of lifters they are following.
+//
+// Kept in their own localStorage entry rather than on st, because /api/share
+// serialises the whole of st: a personal shortlist would ride along to whoever
+// opened the link. This way they persist across reloads and saved meets, and
+// there is no stripping to remember at share time.
+var HIGHLIGHT_KEY = 'mls_highlights';
+
+function allHighlights() {
+  try { return JSON.parse(localStorage.getItem(HIGHLIGHT_KEY) || '{}'); } catch (e) { return {}; }
+}
+
+// Keyed by flight and name, never by row index: re-fetching a meet or switching
+// data source reorders st.lifters, and an index would quietly move a mark onto
+// somebody else. Slug is no good either — unmatched athletes have none, and
+// those are exactly the ones worth marking by hand.
+function highlightKey(lifter) {
+  return (lifter.flight || '?') + '|' + lifter.name;
+}
+
+function loadHighlights() {
+  var all = allHighlights();
+  st.highlights = (st.meetId && all[st.meetId]) ? all[st.meetId].slice() : [];
+}
+
+function saveHighlights() {
+  if (!st.meetId) return;
+  var all = allHighlights();
+  if (st.highlights.length) all[st.meetId] = st.highlights;
+  else delete all[st.meetId];   // don't leave empty meets accumulating
+  try { localStorage.setItem(HIGHLIGHT_KEY, JSON.stringify(all)); } catch (e) {}
+}
+
+function isHighlighted(lifter) {
+  return st.highlights.indexOf(highlightKey(lifter)) !== -1;
+}
+
+// Takes an index rather than a key so the onclick attribute never has to quote
+// a name — apostrophes in "O'Brien" would break out of the string.
+function toggleHighlight(idx, ev) {
+  // The whole card opens the competition history; the star must not.
+  if (ev && ev.stopPropagation) ev.stopPropagation();
+  var lifter = st.lifters[idx];
+  if (!lifter) return;
+  var key = highlightKey(lifter);
+  var at = st.highlights.indexOf(key);
+  if (at === -1) st.highlights.push(key);
+  else st.highlights.splice(at, 1);
+  saveHighlights();
+  render();
+}
+
+function clearHighlights() {
+  if (!st.highlights.length) return;
+  var n = st.highlights.length;
+  if (!confirm('Clear all ' + n + ' highlight' + (n === 1 ? '' : 's') + ' for this meet?')) return;
+  st.highlights = [];
+  saveHighlights();
+  closePanel();
+  render();
+}
+
+function starSvg(on) {
+  return '<svg viewBox="0 0 24 24" width="15" height="15" fill="' + (on ? 'currentColor' : 'none') +
+    '" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true">' +
+    '<path d="M12 3.6l2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z"/></svg>';
+}
+
+function highlightStarHtml(lifter, idx) {
+  var on = isHighlighted(lifter);
+  return '<button class="hl-star' + (on ? ' on' : '') + '" onclick="toggleHighlight(' + idx + ', event)"' +
+    ' role="switch" aria-checked="' + (on ? 'true' : 'false') + '"' +
+    ' aria-label="Highlight ' + esc(lifter.name) + '"' +
+    ' title="' + (on ? 'Remove highlight' : 'Highlight this athlete') + '">' + starSvg(on) + '</button>';
 }
 
 function setFlightView(v) {
@@ -779,6 +861,16 @@ function settingsBodyHtml() {
     '</div>' +
     '<p class="hint">OpenIPF only includes IPF-affiliated competitions.</p>');
 
+  // Nothing to clear until something is marked, so the group stays out of the
+  // way until it has a job.
+  if (st.highlights.length) {
+    html += group('Highlights',
+      '<div class="src-ctrl">' +
+      '<button class="src-opt" onclick="clearHighlights()">Clear all (' + st.highlights.length + ')</button>' +
+      '</div>' +
+      '<p class="hint">Kept on this device for this meet. They are not part of a share link.</p>');
+  }
+
   html += group('Flights',
     '<div class="src-ctrl">' +
     '<button class="src-opt' + (st.flightView === 'single' ? ' active' : '') + '" onclick="setFlightView(\'single\')">One at a time</button>' +
@@ -914,6 +1006,9 @@ async function loadFromShareCode(code) {
     var s = data.state;
     st.phase = 'done';
     st.meetId = s.meetId || null;
+    // The sender's marks aren't in the payload; these are whatever the person
+    // opening the link had already marked on this meet themselves.
+    loadHighlights();
     st.lcUrl = s.lcUrl || '';
     st.nameOverride = s.nameOverride || '';
     st.meet = s.meet;
@@ -1110,14 +1205,15 @@ function formatKg(val) {
   return (n % 1 === 0 ? String(n) : String(n)) + ' kg';
 }
 
-function buildAthleteCard(lifter, r) {
+function buildAthleteCard(lifter, r, idx) {
   var clickable = r && r.oplSlug;
-  var html = '<div class="ath-card' + (clickable ? ' ath-card-clickable' : '') + '"' +
+  var html = '<div class="ath-card' + (clickable ? ' ath-card-clickable' : '') +
+    (isHighlighted(lifter) ? ' ath-card-hl' : '') + '"' +
     (clickable ? ' onclick="openPanel(\'' + esc(r.oplSlug) + '\',\'' + esc(lifter.name.replace(/'/g,'\\\'')) + '\')"' : '') + '>';
   html += '<div class="ath-body">';
   var lcCardCat = lcCategory(lifter);
   var nameCat = lcCardCat ? ' <span class="ath-cat" title="Category at this competition">' + esc(lcCardCat) + '</span>' : '';
-  html += '<div class="ath-name">' + esc(lifter.name) + nameCat + '</div>';
+  html += '<div class="ath-name">' + highlightStarHtml(lifter, idx) + esc(lifter.name) + nameCat + '</div>';
   var lcCardLot = lcLot(lifter);
   if (lcCardLot) html += '<div class="ath-lc"><span title="Lot number at this competition">Lot ' + esc(lcCardLot) + '</span></div>';
   if (r && r.oplSlug) {
@@ -1175,7 +1271,7 @@ function buildSquadView() {
     html += '<div class="flight-section">';
     if (showingAllFlights()) html += flightHeaderHtml(shown[fi], entries.length);
     for (var i = 0; i < entries.length; i++) {
-      html += buildAthleteCard(entries[i].lifter, st.resolved[entries[i].idx]);
+      html += buildAthleteCard(entries[i].lifter, st.resolved[entries[i].idx], entries[i].idx);
     }
     html += '</div>';
   }
@@ -1389,6 +1485,7 @@ async function doFetch() {
 
     st.meet = data.meet;
     st.meetId = data.meetId;
+    loadHighlights();
     st.provider = data.provider || 'liftingcast';
     st.lifters = data.lifters;
     st.activeFlight = null;
@@ -1748,6 +1845,10 @@ function toggleTheme() {
   var next = (localStorage.getItem('mls_theme') === 'neo') ? 'classic' : 'neo';
   try { localStorage.setItem('mls_theme', next); } catch (e) {}
   applyTheme(next);
+  // Swapping the palette leaves any property that is mid-transition holding the
+  // old theme's colour — a highlighted card keeps the other gold until something
+  // touches it. Redrawing hands the new theme fresh nodes to compute against.
+  render();
 }
 applyTheme(localStorage.getItem('mls_theme') === 'neo' ? 'neo' : 'classic');
 // A stored metric may name a column that has since been switched off.

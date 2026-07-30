@@ -10,6 +10,12 @@
   --success: #22c55e;
   --warning: #f59e0b;
   --danger: #ef4444;
+  /* Highlighted athletes. Bright enough to carry against the dark background;
+     the light theme overrides it with a darker gold that survives on white. */
+  --hl: #f2b544;
+  --hl-dim: rgba(242,181,68,0.09);
+  --hl-ring: rgba(242,181,68,0.45);
+  --hl-glow: rgba(242,181,68,0.16);
   --r: 12px;
   --rs: 8px;
 }
@@ -210,6 +216,33 @@ tr:last-child td{border-bottom:none}
 .meet-place{color:var(--text-muted);font-size:.75rem;font-weight:700;text-transform:uppercase}
 .ath-card-clickable{cursor:pointer;transition:border-color .15s}
 .ath-card-clickable:hover{border-color:var(--accent)}
+
+/* ── Highlighted athletes ──
+   The tint does the real work: with a dozen cards on screen a border alone
+   disappears, but a tinted card is findable at arm's length across a room. */
+.ath-card-hl{
+  border-color:var(--hl);
+  background:linear-gradient(0deg,var(--hl-dim),var(--hl-dim)),var(--surface2);
+  box-shadow:0 0 0 1px var(--hl-ring),0 2px 14px var(--hl-glow);
+}
+/* Highlight outranks the hover accent — losing the gold on hover reads as the
+   mark being cleared. */
+.ath-card-hl.ath-card-clickable:hover{border-color:var(--hl)}
+.lifter-row-hl{background:var(--hl-dim);box-shadow:inset 3px 0 0 var(--hl)}
+
+/* Sits with the name in both views. Padding keeps the tap target near 32px
+   without the icon itself growing. */
+.hl-star{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:26px;height:26px;margin:-6px 2px -6px -4px;padding:0;
+  vertical-align:middle;flex-shrink:0;
+  background:none;border:none;cursor:pointer;border-radius:99px;
+  color:var(--text-muted);opacity:.55;
+  transition:color .15s,opacity .15s,background .15s;
+}
+.hl-star:hover{color:var(--hl);opacity:1;background:var(--hl-dim)}
+.hl-star.on{color:var(--hl);opacity:1}
+.hl-star:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 .lifter-list{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
 .lifter-list-header{display:flex;align-items:center;padding:8px 14px;background:var(--surface2);border-bottom:1px solid var(--border);gap:8px}
 .lifter-row{display:flex;align-items:center;gap:12px;padding:10px 14px;border-bottom:1px solid var(--border)}
@@ -340,6 +373,12 @@ html.theme-neo{
   --accent-dim:rgba(47,109,246,0.12);
   --text:#1c2433;
   --text-muted:#6b7488;
+  /* Same hue as the dark theme's gold, darkened until it holds its own on a
+     white card — #f2b544 washes out to nearly nothing up here. */
+  --hl:#b67b00;
+  --hl-dim:rgba(198,138,14,0.12);
+  --hl-ring:rgba(198,138,14,0.55);
+  --hl-glow:rgba(198,138,14,0.18);
   --r:16px;
   --rs:10px;
 }
