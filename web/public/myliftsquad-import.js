@@ -231,10 +231,11 @@ var st = {
   // 'single' shows one flight behind tabs, 'all' puts every flight on one
   // scroll under its own heading.
   flightView: loadPref('mls_flight_view', 'single'),
-  // Both points columns start visible; switching one off is opting out.
+  // Both points columns start hidden: most people want the total, and the
+  // scoring formulas are the specialist view you opt into.
   showMetric: {
-    gl: loadPref('mls_show_gl', '1') !== '0',
-    dots: loadPref('mls_show_dots', '1') !== '0'
+    gl: loadPref('mls_show_gl', '0') === '1',
+    dots: loadPref('mls_show_dots', '0') === '1'
   },
   // Marked lifters for the meet on screen, refilled by loadHighlights() each
   // time a meet is opened.
@@ -854,21 +855,31 @@ function settingsBodyHtml() {
     return st.sortCol === col ? (st.sortDir === 'asc' ? ' ↑' : ' ↓') : '';
   }
 
-  var html = group('Data Source',
-    '<div class="src-ctrl">' +
-    '<button class="src-opt' + (st.source === 'opl' ? ' active' : '') + '" onclick="setOplSource(\'opl\')">OpenPowerlifting</button>' +
-    '<button class="src-opt' + (st.source === 'ipf' ? ' active' : '') + '" onclick="setOplSource(\'ipf\')">OpenIPF</button>' +
-    '</div>' +
-    '<p class="hint">OpenIPF only includes IPF-affiliated competitions.</p>');
+  // Ordered by how often a setting gets touched during a meet, not by how the
+  // code is arranged: sorting changes constantly, the data source is set once.
+  var html = '';
 
-  // Nothing to clear until something is marked, so the group stays out of the
-  // way until it has a job.
-  if (st.highlights.length) {
-    html += group('Highlights',
+  if (st.saved) {
+    html += group('Sort By',
       '<div class="src-ctrl">' +
-      '<button class="src-opt" onclick="clearHighlights()">Clear all (' + st.highlights.length + ')</button>' +
+      '<button class="src-opt' + (st.sortCol === 'lot' ? ' active' : '') + '" onclick="setSort(\'lot\')">Lot' + arrow('lot') + '</button>' +
+      '<button class="src-opt' + (st.sortCol === 'name' ? ' active' : '') + '" onclick="setSort(\'name\')">Name' + arrow('name') + '</button>' +
+      '<button class="src-opt' + (st.sortCol === 'class' ? ' active' : '') + '" onclick="setSort(\'class\')">Class' + arrow('class') + '</button>' +
+      '<button class="src-opt' + (st.sortCol === 'total' ? ' active' : '') + '" onclick="setSort(\'total\')">' + metricLabel(st.metric) + arrow('total') + '</button>' +
+      '</div>');
+  }
+
+  // Nothing to choose between when Total is the only number left.
+  var pickable = visibleMetrics();
+  if (pickable.length > 1) {
+    html += group('Display Metric',
+      '<div class="src-ctrl">' +
+      pickable.map(function(m) {
+        return '<button class="src-opt' + (st.metric === m.key ? ' active' : '') +
+          '" onclick="setMetric(\'' + m.key + '\')">' + m.label + '</button>';
+      }).join('') +
       '</div>' +
-      '<p class="hint">Kept on this device for this meet. They are not part of a share link.</p>');
+      '<p class="hint">Leads each card and sets what the numeric sort uses.</p>');
   }
 
   html += group('Flights',
@@ -890,30 +901,24 @@ function settingsBodyHtml() {
         '<span class="chip-tick" aria-hidden="true">' + (on ? '✓' : '') + '</span>' + m.label + '</button>';
     }).join('') +
     '</div>' +
-    '<p class="hint">Hide a scoring column to keep the cards uncluttered. Total is always shown.</p>');
+    '<p class="hint">Off by default — switch one on to compare lifters across bodyweights. Total is always shown.</p>');
 
-  // Nothing to choose between when Total is the only number left.
-  var pickable = visibleMetrics();
-  if (pickable.length > 1) {
-    html += group('Display Metric',
+  // Nothing to clear until something is marked, so the group stays out of the
+  // way until it has a job.
+  if (st.highlights.length) {
+    html += group('Highlighted Athletes',
       '<div class="src-ctrl">' +
-      pickable.map(function(m) {
-        return '<button class="src-opt' + (st.metric === m.key ? ' active' : '') +
-          '" onclick="setMetric(\'' + m.key + '\')">' + m.label + '</button>';
-      }).join('') +
+      '<button class="src-opt" onclick="clearHighlights()">Clear all (' + st.highlights.length + ')</button>' +
       '</div>' +
-      '<p class="hint">Leads each card and sets what the numeric sort uses.</p>');
+      '<p class="hint">Kept on this device for this meet. They are not part of a share link.</p>');
   }
 
-  if (st.saved) {
-    html += group('Sort By',
-      '<div class="src-ctrl">' +
-      '<button class="src-opt' + (st.sortCol === 'lot' ? ' active' : '') + '" onclick="setSort(\'lot\')">Lot' + arrow('lot') + '</button>' +
-      '<button class="src-opt' + (st.sortCol === 'name' ? ' active' : '') + '" onclick="setSort(\'name\')">Name' + arrow('name') + '</button>' +
-      '<button class="src-opt' + (st.sortCol === 'class' ? ' active' : '') + '" onclick="setSort(\'class\')">Class' + arrow('class') + '</button>' +
-      '<button class="src-opt' + (st.sortCol === 'total' ? ' active' : '') + '" onclick="setSort(\'total\')">' + metricLabel(st.metric) + arrow('total') + '</button>' +
-      '</div>');
-  }
+  html += group('Data Source',
+    '<div class="src-ctrl">' +
+    '<button class="src-opt' + (st.source === 'opl' ? ' active' : '') + '" onclick="setOplSource(\'opl\')">OpenPowerlifting</button>' +
+    '<button class="src-opt' + (st.source === 'ipf' ? ' active' : '') + '" onclick="setOplSource(\'ipf\')">OpenIPF</button>' +
+    '</div>' +
+    '<p class="hint">OpenIPF only includes IPF-affiliated competitions.</p>');
 
   return html;
 }
