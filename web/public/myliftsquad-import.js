@@ -240,6 +240,7 @@ var st = {
   // Marked lifters for the meet on screen, refilled by loadHighlights() each
   // time a meet is opened.
   highlights: [],
+  onlyHighlighted: loadPref('mls_only_highlighted', '0') === '1',
   sortCol: loadPref('mls_sort_col', 'lot') || 'lot',
   sortDir: loadPref('mls_sort_dir', 'asc'),
   // Which database this meet's numbers came from. Seeded from the saved
@@ -590,6 +591,7 @@ function toggleHighlight(idx, ev) {
   if (at === -1) st.highlights.push(key);
   else st.highlights.splice(at, 1);
   saveHighlights();
+  dropFilterIfNothingMarked();
   render();
 }
 
@@ -599,8 +601,31 @@ function clearHighlights() {
   if (!confirm('Clear all ' + n + ' highlight' + (n === 1 ? '' : 's') + ' for this meet?')) return;
   st.highlights = [];
   saveHighlights();
+  dropFilterIfNothingMarked();
   closePanel();
   render();
+}
+
+function setOnlyHighlighted(on) {
+  st.onlyHighlighted = !!on;
+  savePref('mls_only_highlighted', st.onlyHighlighted ? '1' : '0');
+  render();
+}
+
+// Its own switch lives in a settings group that only exists while something is
+// marked. Un-star the last lifter with the filter on and the meet would look
+// empty with no visible way to bring it back, so the filter goes with them.
+function dropFilterIfNothingMarked() {
+  if (!st.highlights.length && st.onlyHighlighted) setOnlyHighlighted(false);
+}
+
+function filteringToHighlights() {
+  return st.onlyHighlighted && st.highlights.length > 0;
+}
+
+function visibleEntries(entries) {
+  if (!filteringToHighlights()) return entries;
+  return entries.filter(function(e) { return isHighlighted(e.lifter); });
 }
 
 function starSvg(on) {
@@ -654,12 +679,15 @@ function buildFlightNav(groups, flights) {
   // Few enough to stay legible as tabs even on a phone.
   var few = flights.length <= 3 ? ' few' : '';
 
+  // Every flight keeps its tab while filtering, counting down to 0 rather than
+  // disappearing — a flight vanishing would read as the meet having changed,
+  // and you still want to be able to look into an empty one.
   var html = '<div class="flight-tabs' + few + '" style="grid-template-columns:repeat(' + cols + ',minmax(0,1fr))">';
   for (var i = 0; i < flights.length; i++) {
     var f = flights[i];
     html += '<button class="ftab' + (f === st.activeFlight ? ' ftab-active' : '') + '" onclick="setFlight(' + i + ')">';
     html += 'Flight ' + esc(f);
-    html += '<span class="ftab-count">' + groups[f].length + '</span>';
+    html += '<span class="ftab-count">' + visibleEntries(groups[f]).length + '</span>';
     html += '</button>';
   }
   html += '</div>';
@@ -668,8 +696,9 @@ function buildFlightNav(groups, flights) {
   html += '<select class="flight-select" onchange="setFlight(this.selectedIndex)">';
   for (var j = 0; j < flights.length; j++) {
     var fl = flights[j];
+    var n = visibleEntries(groups[fl]).length;
     html += '<option' + (fl === st.activeFlight ? ' selected' : '') + '>';
-    html += 'Flight ' + esc(fl) + ' (' + groups[fl].length + ' athletes)';
+    html += 'Flight ' + esc(fl) + ' (' + n + (n === 1 ? ' athlete' : ' athletes') + ')';
     html += '</option>';
   }
   html += '</select></div>';
@@ -684,6 +713,14 @@ function lifterListHeaderHtml() {
     '</div>';
 }
 
+// Shown in place of a flight's list when the highlight filter has emptied it.
+function noHighlightsHtml(flight) {
+  return '<div class="flight-empty">' +
+    '<p>No highlighted lifters in Flight ' + esc(flight) + '.</p>' +
+    '<button class="btn-sm btn-sm-ghost" onclick="setOnlyHighlighted(false)">Show all lifters</button>' +
+    '</div>';
+}
+
 function buildFlightsHTML() {
   var groups = groupByFlight(st.lifters);
   var flights = Object.keys(groups).sort();
@@ -692,13 +729,18 @@ function buildFlightsHTML() {
 
   var shown = flightsToRender(flights);
   for (var fi = 0; fi < shown.length; fi++) {
-    var entries = groups[shown[fi]] || [];
+    var entries = visibleEntries(groups[shown[fi]] || []);
     html += '<div class="flight-section">';
     if (showingAllFlights()) html += flightHeaderHtml(shown[fi], entries.length);
-    html += '<div class="lifter-list">';
-    html += lifterListHeaderHtml();
-    html += buildTableRows(sortEntries(entries));
-    html += '</div></div>';
+    if (!entries.length && filteringToHighlights()) {
+      html += noHighlightsHtml(shown[fi]);
+    } else {
+      html += '<div class="lifter-list">';
+      html += lifterListHeaderHtml();
+      html += buildTableRows(sortEntries(entries));
+      html += '</div>';
+    }
+    html += '</div>';
   }
   return html;
 }
@@ -908,9 +950,13 @@ function settingsBodyHtml() {
   if (st.highlights.length) {
     html += group('Highlighted Athletes',
       '<div class="src-ctrl">' +
+      '<button class="src-opt' + (!st.onlyHighlighted ? ' active' : '') + '" onclick="setOnlyHighlighted(false)">Show all</button>' +
+      '<button class="src-opt' + (st.onlyHighlighted ? ' active' : '') + '" onclick="setOnlyHighlighted(true)">Highlighted only (' + st.highlights.length + ')</button>' +
+      '</div>' +
+      '<div class="src-ctrl" style="margin-top:8px">' +
       '<button class="src-opt" onclick="clearHighlights()">Clear all (' + st.highlights.length + ')</button>' +
       '</div>' +
-      '<p class="hint">Kept on this device for this meet. They are not part of a share link.</p>');
+      '<p class="hint">Flight counts follow the filter. Highlights are kept on this device for this meet, and are not part of a share link.</p>');
   }
 
   html += group('Data Source',
@@ -1272,11 +1318,15 @@ function buildSquadView() {
 
   var shown = flightsToRender(flights);
   for (var fi = 0; fi < shown.length; fi++) {
-    var entries = sortEntries(groups[shown[fi]] || []);
+    var entries = sortEntries(visibleEntries(groups[shown[fi]] || []));
     html += '<div class="flight-section">';
     if (showingAllFlights()) html += flightHeaderHtml(shown[fi], entries.length);
-    for (var i = 0; i < entries.length; i++) {
-      html += buildAthleteCard(entries[i].lifter, st.resolved[entries[i].idx], entries[i].idx);
+    if (!entries.length && filteringToHighlights()) {
+      html += noHighlightsHtml(shown[fi]);
+    } else {
+      for (var i = 0; i < entries.length; i++) {
+        html += buildAthleteCard(entries[i].lifter, st.resolved[entries[i].idx], entries[i].idx);
+      }
     }
     html += '</div>';
   }
