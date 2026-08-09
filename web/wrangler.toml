@@ -16,6 +16,12 @@ directory = "./public"
 pattern = "myliftsquad.com"
 custom_domain = true
 
+# People type the www. The Worker answers on both; index.html carries a
+# canonical link so search engines still treat the apex as the real address.
+[[routes]]
+pattern = "www.myliftsquad.com"
+custom_domain = true
+
 [[kv_namespaces]]
 binding = "SHARES"
 id = "bfff7bb8acd34529b610e7f1613ab9e0"

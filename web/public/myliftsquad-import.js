@@ -463,8 +463,9 @@ function setSort(col) {
   if (st.sortCol === col) {
     st.sortDir = st.sortDir === 'asc' ? 'desc' : 'asc';
   } else {
+    // Switching column keeps the direction. Someone looking at the biggest
+    // squats wants the biggest benches next, not the smallest.
     st.sortCol = col;
-    st.sortDir = 'asc';
   }
   savePref('mls_sort_col', st.sortCol || '');
   savePref('mls_sort_dir', st.sortDir);
@@ -942,16 +943,23 @@ function viewBodyHtml() {
 
   var html = '';
 
+  // Seven options overflow one row, so they are split where the meaning
+  // splits: how the squad is ordered, versus which number it is ranked on.
+  // Each group then fits its own row and the break reads as deliberate.
   if (st.saved) {
-    html += group('Sort By',
+    html += group('Order By',
       '<div class="src-ctrl">' +
       sortBtn('lot', 'Lot') +
       sortBtn('name', 'Name') +
       sortBtn('class', 'Class') +
+      '</div>');
+
+    html += group('Best Lift',
+      '<div class="src-ctrl">' +
       sortBtn('total', metricLabel(st.metric)) +
       LIFTS.map(function(l) { return sortBtn(l.key, l.label); }).join('') +
       '</div>' +
-      '<p class="hint">Squat, bench and deadlift sort on each lifter\'s best ever, not on this meet. Tap the same one again to reverse it.</p>');
+      '<p class="hint">Squat, bench and deadlift rank on each lifter\'s best ever, not on this meet. Tap the one already chosen to reverse it — the direction carries over when you switch.</p>');
   }
 
   // Nothing to choose between when Total is the only number left.
