@@ -4,6 +4,17 @@ android/build/
 android/app/build/
 android/local.properties
 
+# Android Studio session state — machine-specific, changes on every launch
+android/.idea/
+
+# Signed release builds. The artefact belongs to a Play release, not to git;
+# 12MB of binary churns the repo every time it is rebuilt.
+android/app/release/
+
+# Meet paperwork and one-off import payloads kept locally for reference
+*.pdf
+create-may-open-2026.mjs
+
 # Wrangler local cache, written on deploy
 web/.wrangler/
 backend/.wrangler/
