@@ -10,19 +10,11 @@ preview_urls = false
 [assets]
 directory = "./public"
 
-# myliftsquad.com is the tool's public home, but the zone lives in a different
-# Cloudflare account (paulwalshirl@) than this worker (gooseyirl@), and a worker
-# can only bind a hostname in its own account. Binding it fails every deploy
-# with a red "triggers failed" error, so it stays commented out and a redirect
-# rule on the zone forwards to workers.dev in the meantime.
-#
-# Cloudflare blocks account transfers for the first 10 days after registration
-# (registered 2026-07-29), so from 2026-08-08: move the domain to gooseyirl@,
-# uncomment this, deploy, and delete the redirect rule.
-#
-# [[routes]]
-# pattern = "myliftsquad.com"
-# custom_domain = true
+# The tool's public home. Cloudflare creates and manages the DNS record for a
+# custom domain itself, so the zone needs no A record of its own.
+[[routes]]
+pattern = "myliftsquad.com"
+custom_domain = true
 
 [[kv_namespaces]]
 binding = "SHARES"
