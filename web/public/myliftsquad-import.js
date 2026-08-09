@@ -174,6 +174,7 @@ function loadFromHistory(meetId) {
   for (var i = 0; i < history.length; i++) { if (history[i].meetId === meetId) { entry = history[i]; break; } }
   if (!entry) return;
   st.phase = 'done';
+  pushMeetHistory();
   st.meetId = entry.meetId;
   loadHighlights();
   st.lcUrl = entry.lcUrl;
@@ -826,6 +827,7 @@ async function buildBundleCodes() {
 // `window.history` is spelled out because saveToHistory() and friends declare a
 // local `var history` for the saved-meets list.
 var panelHistoryEntry = false;
+var meetHistoryEntry = false;
 
 function pushPanelHistory() {
   // One entry per open, however many times the panel changes mode while there.
@@ -834,6 +836,16 @@ function pushPanelHistory() {
     window.history.pushState({ mlsPanel: true }, '');
     panelHistoryEntry = true;
   } catch (e) { /* history unavailable — the panel still works, back won't */ }
+}
+
+// Opening a meet is a second level of the same idea: back should return to the
+// import screen rather than leaving the site. Stack reads home → meet → panel.
+function pushMeetHistory() {
+  if (meetHistoryEntry) return;
+  try {
+    window.history.pushState({ mlsMeet: true }, '');
+    meetHistoryEntry = true;
+  } catch (e) { /* as above */ }
 }
 
 function showPanel() {
@@ -1129,6 +1141,9 @@ async function loadFromShareCode(code) {
     st.activeFlight = null;
     st.saved = true;
     st.shareCode = null;
+    // A share link lands straight in the meet, so give back somewhere to go:
+    // the import screen, rather than off the site entirely.
+    pushMeetHistory();
     // Keep the shared meet so the recipient can come back to it from Saved
     // Meets without the link. The Codes button in the header reaches the
     // import codes, so the panel doesn't need to open over the entry list.
@@ -1184,10 +1199,14 @@ function closePanel(fromBack) {
   }
 }
 
-window.addEventListener('popstate', function () {
-  // Guard on the panel actually being open: closePanel's own history.back()
-  // fires this too, and by then there is nothing left to close.
-  if (st.panelMode) closePanel(true);
+window.addEventListener('popstate', function (e) {
+  // Which entry we landed on decides what to unwind. Reading it from the state
+  // rather than from a flag matters because closePanel and doReset call
+  // history.back() themselves, which fires this handler too — landing on the
+  // meet entry must not then also close the meet.
+  var s = e.state || {};
+  if (st.panelMode && !s.mlsPanel) { closePanel(true); return; }
+  if (!s.mlsPanel && !s.mlsMeet && meetHistoryEntry) doReset(true);
 });
 
 // Reading a competition history means the worker fetching a CSV from
@@ -1567,7 +1586,7 @@ function render() {
   });
 }
 
-function doReset() {
+function doReset(fromBack) {
   st.phase = 'input';
   st.error = null;
   st.bundleCodes = null;
@@ -1576,6 +1595,14 @@ function doReset() {
   // default rather than inheriting the source of the meet they just closed.
   st.source = loadPref('mls_opl_source', 'opl');
   render();
+  // Leaving by the Back link takes the meet's history entry with it, so one
+  // press of the device back button doesn't then leave the site.
+  if (meetHistoryEntry && fromBack !== true) {
+    meetHistoryEntry = false;
+    window.history.back();
+  } else {
+    meetHistoryEntry = false;
+  }
 }
 
 async function doFetch() {
@@ -1604,6 +1631,7 @@ async function doFetch() {
     st.resolved = new Array(data.lifters.length).fill(null);
     st.resolvedCount = 0;
     st.phase = 'resolving';
+    pushMeetHistory();
     render();
 
     await doResolveAll();
