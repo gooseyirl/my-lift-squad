@@ -35,6 +35,22 @@ var METRICS = [
   { key: 'dots',  label: 'Dots',      on: 'oplDots',     meet: 'dots',     unit: 'Dots', pref: 'mls_show_dots' }
 ];
 
+// The three lifts, sortable in their own right. These are career bests from
+// the resolver, so sorting by Squat ranks the squad by the best squat each
+// lifter has ever recorded, not by anything from this meet.
+var LIFTS = [
+  { key: 'squat',    label: 'Squat',    on: 'oplSquat' },
+  { key: 'bench',    label: 'Bench',    on: 'oplBench' },
+  { key: 'deadlift', label: 'Deadlift', on: 'oplDeadlift' }
+];
+
+function liftDef(key) {
+  for (var i = 0; i < LIFTS.length; i++) {
+    if (LIFTS[i].key === key) return LIFTS[i];
+  }
+  return null;
+}
+
 function metricDef(key) {
   for (var i = 0; i < METRICS.length; i++) {
     if (METRICS[i].key === key) return METRICS[i];
@@ -511,6 +527,16 @@ function sortEntries(entries) {
       if (va !== vb) return dir * (va - vb);
       return a.lifter.name.localeCompare(b.lifter.name);
     }
+    // Squat, bench or deadlift on its own. Anyone without a profile — or
+    // without that lift on record — counts as 0, so they head the list
+    // ascending and tail it descending, the same as the metric sort.
+    var lift = liftDef(st.sortCol);
+    if (lift) {
+      var sa = metricNum(st.resolved[a.idx], lift, 'on');
+      var sb = metricNum(st.resolved[b.idx], lift, 'on');
+      if (sa !== sb) return dir * (sa - sb);
+      return a.lifter.name.localeCompare(b.lifter.name);
+    }
     return 0;
   });
 }
@@ -882,6 +908,10 @@ async function createShareLink() {
   }
 }
 
+// Two panels, split by what a control actually changes. Settings configure
+// where the numbers come from; View options change how the page looks. The
+// data source is set once a meet and then forgotten, while sorting and
+// columns get touched constantly — mixing them buried one in the other.
 function openSettingsPanel() {
   st.panelMode = 'settings';
   st.panelSlug = null;
@@ -889,26 +919,39 @@ function openSettingsPanel() {
   showPanel();
 }
 
-function settingsBodyHtml() {
-  function group(title, body) {
-    return '<div class="set-group"><div class="set-label">' + title + '</div>' + body + '</div>';
-  }
+function openViewPanel() {
+  st.panelMode = 'view';
+  st.panelSlug = null;
+  st.panelName = 'View options';
+  showPanel();
+}
+
+function setGroup(title, body) {
+  return '<div class="set-group"><div class="set-label">' + title + '</div>' + body + '</div>';
+}
+
+function viewBodyHtml() {
+  var group = setGroup;
   function arrow(col) {
     return st.sortCol === col ? (st.sortDir === 'asc' ? ' ↑' : ' ↓') : '';
   }
+  function sortBtn(col, label) {
+    return '<button class="src-opt' + (st.sortCol === col ? ' active' : '') +
+      '" onclick="setSort(\'' + col + '\')">' + label + arrow(col) + '</button>';
+  }
 
-  // Ordered by how often a setting gets touched during a meet, not by how the
-  // code is arranged: sorting changes constantly, the data source is set once.
   var html = '';
 
   if (st.saved) {
     html += group('Sort By',
       '<div class="src-ctrl">' +
-      '<button class="src-opt' + (st.sortCol === 'lot' ? ' active' : '') + '" onclick="setSort(\'lot\')">Lot' + arrow('lot') + '</button>' +
-      '<button class="src-opt' + (st.sortCol === 'name' ? ' active' : '') + '" onclick="setSort(\'name\')">Name' + arrow('name') + '</button>' +
-      '<button class="src-opt' + (st.sortCol === 'class' ? ' active' : '') + '" onclick="setSort(\'class\')">Class' + arrow('class') + '</button>' +
-      '<button class="src-opt' + (st.sortCol === 'total' ? ' active' : '') + '" onclick="setSort(\'total\')">' + metricLabel(st.metric) + arrow('total') + '</button>' +
-      '</div>');
+      sortBtn('lot', 'Lot') +
+      sortBtn('name', 'Name') +
+      sortBtn('class', 'Class') +
+      sortBtn('total', metricLabel(st.metric)) +
+      LIFTS.map(function(l) { return sortBtn(l.key, l.label); }).join('') +
+      '</div>' +
+      '<p class="hint">Squat, bench and deadlift sort on each lifter\'s best ever, not on this meet. Tap the same one again to reverse it.</p>');
   }
 
   // Nothing to choose between when Total is the only number left.
@@ -961,14 +1004,16 @@ function settingsBodyHtml() {
       '<p class="hint">Flight counts follow the filter. Highlights are kept on this device for this meet, and are not part of a share link.</p>');
   }
 
-  html += group('Data Source',
+  return html;
+}
+
+function settingsBodyHtml() {
+  return setGroup('Data Source',
     '<div class="src-ctrl">' +
     '<button class="src-opt' + (st.source === 'opl' ? ' active' : '') + '" onclick="setOplSource(\'opl\')">OpenPowerlifting</button>' +
     '<button class="src-opt' + (st.source === 'ipf' ? ' active' : '') + '" onclick="setOplSource(\'ipf\')">OpenIPF</button>' +
     '</div>' +
-    '<p class="hint">OpenIPF only includes IPF-affiliated competitions.</p>');
-
-  return html;
+    '<p class="hint">Where every lifter\'s numbers are looked up. OpenIPF only includes IPF-affiliated competitions, so lifters with no IPF history will come back unmatched. Changing this re-looks-up the whole squad.</p>');
 }
 
 // Two ways out of here, each labelled with where it lands: a code for the app,
@@ -1177,8 +1222,9 @@ function renderPanel() {
   if (st.panelSlug) html += '<a class="panel-opl" href="' + oplProfileBase() + '/' + esc(st.panelSlug) + '" target="_blank" rel="noopener">' + sourceName(st.source) + ' &#8599;</a>';
   html += '<button class="panel-close" onclick="closePanel()">&#10005;</button>';
   html += '</div></div>';
-  if (st.panelMode === 'settings') {
-    html += '<div class="panel-settings">' + settingsBodyHtml() + '</div>';
+  if (st.panelMode === 'settings' || st.panelMode === 'view') {
+    var body = st.panelMode === 'view' ? viewBodyHtml() : settingsBodyHtml();
+    html += '<div class="panel-settings">' + body + '</div>';
     el.innerHTML = html;
     return;
   }
@@ -1418,6 +1464,7 @@ function render() {
       } else {
         html += '<button class="btn-act btn-save" onclick="doSave()">Save</button>';
       }
+      html += '<button class="btn-act btn-settings" onclick="openViewPanel()">View</button>';
       html += '<button class="btn-act btn-settings" onclick="openSettingsPanel()">Settings</button>';
       html += '</div>';
     }
@@ -1488,7 +1535,7 @@ function render() {
   // Import codes and their QRs render inside the slide-out panel, via
   // renderShareQRs(). Keep an open settings panel in step with toggles made
   // from within it, since those re-render the page but not the panel.
-  if (st.panelMode === 'settings') renderPanel();
+  if (st.panelMode === 'settings' || st.panelMode === 'view') renderPanel();
 
   if (st.phase === 'input') {
     var ui = document.getElementById('lcu');
