@@ -41,9 +41,7 @@ input:focus{border-color:var(--accent)}
 .btn-primary:disabled{opacity:.45;cursor:not-allowed;transform:none}
 .btn-secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
 .btn-block{width:100%}
-/* Top-aligned: the action column is four rows tall, and centring would leave
-   the title floating in the middle of the card with dead space either side. */
-.meet-meta{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-start;margin-bottom:4px}
+.meet-meta{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:4px}
 .meet-name{font-size:1.0625rem;font-weight:600}
 /* Reads as the title until you focus it, so edit mode doesn't look like a form.
    Selector carries the element type so it outranks the generic input[type=text]
@@ -57,9 +55,9 @@ input.meet-name-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(
 /* Two to a row: Share and Edit above, View and Settings below. A grid rather
    than a wrap so the pair always breaks in the same place, and equal columns
    so the four read as one block instead of a ragged edge. */
-/* One button per row, so the column reads straight down whatever the button
-   count is — the saved state has four, the unsaved three. */
-.meet-actions{display:grid;grid-template-columns:1fr;gap:8px;margin-left:auto;flex-shrink:0;justify-items:stretch}
+/* Always four buttons — Share is disabled rather than dropped while editing —
+   so the 2x2 never breaks unevenly. */
+.meet-actions{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-left:auto;flex-shrink:0;justify-items:stretch}
 .meet-chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:10px}
 .chip{display:inline-block;background:var(--accent-dim);color:var(--accent);border-radius:20px;padding:2px 11px;font-size:.8rem;font-weight:500}
 .meet-chips .chip{padding:1px 9px;font-size:.7rem}
@@ -175,12 +173,14 @@ tr:last-child td{border-bottom:none}
 /* Header actions share one geometry so Share/Edit/Settings line up as a set;
    only the colours differ. */
 .btn-act{display:inline-flex;align-items:center;justify-content:center;height:30px;padding:0 14px;border-radius:var(--rs);font-size:.8125rem;font-weight:600;line-height:1;cursor:pointer;border:1px solid var(--border);background:none;color:var(--text-muted);transition:border-color .15s,color .15s,background .15s,opacity .15s}
-.btn-act:hover{border-color:var(--accent);color:var(--accent)}
+.btn-act:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
+/* :hover still matches a disabled button, so every hover rule below has to
+   opt out or the inactive Share would light up under the cursor. */
 .btn-act:disabled{opacity:.5;cursor:not-allowed}
 .btn-save{background:var(--accent);border-color:var(--accent);color:#fff}
 .btn-save:hover{background:var(--accent);border-color:var(--accent);color:#fff;opacity:.85}
 .btn-share{border-color:var(--accent);color:var(--accent)}
-.btn-share:hover{background:var(--accent);color:#fff}
+.btn-share:hover:not(:disabled){background:var(--accent);color:#fff}
 .loading{text-align:center;padding:56px 24px;color:var(--text-muted)}
 .spinner{display:inline-block;width:28px;height:28px;border:2.5px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .75s linear infinite;margin-bottom:14px}
 @keyframes spin{to{transform:rotate(360deg)}}

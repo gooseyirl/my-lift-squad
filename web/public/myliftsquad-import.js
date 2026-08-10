@@ -1606,6 +1606,10 @@ function render() {
         html += '<button class="btn-act btn-share" onclick="openSharePanel()">Share</button>';
         html += '<button class="btn-act btn-edit" onclick="st.saved=false;st.shareCode=null;render()">Edit</button>';
       } else {
+        // Share stays in place while editing, just inactive — there is nothing
+        // to share until the meet is saved, and dropping the button would
+        // leave the grid with an odd number of tiles.
+        html += '<button class="btn-act btn-share" disabled title="Save the competition before sharing it">Share</button>';
         html += '<button class="btn-act btn-save" onclick="doSave()">Save</button>';
       }
       html += '<button class="btn-act btn-settings" onclick="openViewPanel()">View</button>';
