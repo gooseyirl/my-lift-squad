@@ -175,6 +175,7 @@ function loadFromHistory(meetId) {
   if (!entry) return;
   st.phase = 'done';
   pushMeetHistory();
+  st.classFilter = [];
   st.meetId = entry.meetId;
   loadHighlights();
   st.lcUrl = entry.lcUrl;
@@ -258,6 +259,10 @@ var st = {
   // time a meet is opened.
   highlights: [],
   onlyHighlighted: loadPref('mls_only_highlighted', '0') === '1',
+  // Weight classes to show, as category keys ("F-57"). Empty means every
+  // class. Not remembered between meets: the classes differ from one meet to
+  // the next, so a kept filter would hide a squad for no visible reason.
+  classFilter: [],
   sortCol: loadPref('mls_sort_col', 'lot') || 'lot',
   sortDir: loadPref('mls_sort_dir', 'asc'),
   // Which database this meet's numbers came from. Seeded from the saved
@@ -651,9 +656,65 @@ function filteringToHighlights() {
   return st.onlyHighlighted && st.highlights.length > 0;
 }
 
+// The category chip already on every card — "F-57", "M-120" — is the unit
+// people think in, so it is what the filter works on. 83kg men and 83kg women
+// are different classes and must not collapse into one chip.
+var NO_CLASS = '—';
+
+function lifterClassKey(lifter) {
+  return lcCategory(lifter) || NO_CLASS;
+}
+
+// Every class present in the meet, women first, then ascending by weight.
+// "84+" parses to 84 and sits after 84, which is where it belongs.
+function meetClasses() {
+  var seen = {};
+  var out = [];
+  for (var i = 0; i < st.lifters.length; i++) {
+    var key = lifterClassKey(st.lifters[i]);
+    if (!seen[key]) { seen[key] = true; out.push(key); }
+  }
+  return out.sort(function(a, b) {
+    if (a === NO_CLASS) return 1;
+    if (b === NO_CLASS) return -1;
+    var ga = a.charAt(0), gb = b.charAt(0);
+    if (ga !== gb) return ga.localeCompare(gb);
+    var wa = parseWc(a.replace(/^[A-Z]-/, '')), wb = parseWc(b.replace(/^[A-Z]-/, ''));
+    if (wa !== wb) return wa - wb;
+    return a.localeCompare(b);
+  });
+}
+
+function filteringToClasses() {
+  return st.classFilter.length > 0;
+}
+
+function toggleClassFilter(i) {
+  var key = meetClasses()[i];
+  if (key === undefined) return;
+  var at = st.classFilter.indexOf(key);
+  if (at === -1) st.classFilter.push(key);
+  else st.classFilter.splice(at, 1);
+  render();
+}
+
+function clearClassFilter() {
+  if (!st.classFilter.length) return;
+  st.classFilter = [];
+  render();
+}
+
 function visibleEntries(entries) {
-  if (!filteringToHighlights()) return entries;
-  return entries.filter(function(e) { return isHighlighted(e.lifter); });
+  var out = entries;
+  if (filteringToClasses()) {
+    out = out.filter(function(e) {
+      return st.classFilter.indexOf(lifterClassKey(e.lifter)) !== -1;
+    });
+  }
+  if (filteringToHighlights()) {
+    out = out.filter(function(e) { return isHighlighted(e.lifter); });
+  }
+  return out;
 }
 
 function starSvg(on) {
@@ -994,6 +1055,30 @@ function viewBodyHtml() {
     '</div>' +
     '<p class="hint">All flights puts the whole meet on one scroll, each flight under its own heading.</p>');
 
+  // Independent on/off per class, so chips rather than the segmented pills —
+  // the same reasoning as Show Points. Only worth offering when the meet has
+  // more than one class to choose between.
+  var classes = meetClasses();
+  if (classes.length > 1) {
+    var chosen = st.classFilter.length;
+    html += group('Weight Classes' + (chosen ? ' (' + chosen + ' of ' + classes.length + ')' : ''),
+      '<div class="chip-ctrl">' +
+      classes.map(function(key, i) {
+        var on = st.classFilter.indexOf(key) !== -1;
+        return '<button class="chip-toggle' + (on ? ' on' : '') +
+          '" role="switch" aria-checked="' + (on ? 'true' : 'false') +
+          '" onclick="toggleClassFilter(' + i + ')">' +
+          '<span class="chip-tick" aria-hidden="true">' + (on ? '✓' : '') + '</span>' +
+          esc(key === NO_CLASS ? 'No class' : key) + '</button>';
+      }).join('') +
+      '</div>' +
+      (chosen
+        ? '<div class="src-ctrl" style="margin-top:8px">' +
+          '<button class="src-opt" onclick="clearClassFilter()">Show every class</button></div>'
+        : '') +
+      '<p class="hint">Pick none to see everyone. Flight counts follow the filter, and it resets when you open another meet.</p>');
+  }
+
   // Independent on/off switches, so these are chips rather than one of the
   // segmented .src-ctrl pills — those read as "pick exactly one".
   html += group('Show Points',
@@ -1144,6 +1229,7 @@ async function loadFromShareCode(code) {
     // A share link lands straight in the meet, so give back somewhere to go:
     // the import screen, rather than off the site entirely.
     pushMeetHistory();
+    st.classFilter = [];
     // Keep the shared meet so the recipient can come back to it from Saved
     // Meets without the link. The Codes button in the header reaches the
     // import codes, so the panel doesn't need to open over the entry list.
@@ -1632,6 +1718,7 @@ async function doFetch() {
     st.resolvedCount = 0;
     st.phase = 'resolving';
     pushMeetHistory();
+    st.classFilter = [];
     render();
 
     await doResolveAll();
