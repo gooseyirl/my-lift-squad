@@ -41,7 +41,9 @@ input:focus{border-color:var(--accent)}
 .btn-primary:disabled{opacity:.45;cursor:not-allowed;transform:none}
 .btn-secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
 .btn-block{width:100%}
-.meet-meta{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:4px}
+/* Top-aligned: the action column is four rows tall, and centring would leave
+   the title floating in the middle of the card with dead space either side. */
+.meet-meta{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-start;margin-bottom:4px}
 .meet-name{font-size:1.0625rem;font-weight:600}
 /* Reads as the title until you focus it, so edit mode doesn't look like a form.
    Selector carries the element type so it outranks the generic input[type=text]
@@ -55,7 +57,9 @@ input.meet-name-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(
 /* Two to a row: Share and Edit above, View and Settings below. A grid rather
    than a wrap so the pair always breaks in the same place, and equal columns
    so the four read as one block instead of a ragged edge. */
-.meet-actions{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-left:auto;flex-shrink:0;justify-items:stretch}
+/* One button per row, so the column reads straight down whatever the button
+   count is — the saved state has four, the unsaved three. */
+.meet-actions{display:grid;grid-template-columns:1fr;gap:8px;margin-left:auto;flex-shrink:0;justify-items:stretch}
 .meet-chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:10px}
 .chip{display:inline-block;background:var(--accent-dim);color:var(--accent);border-radius:20px;padding:2px 11px;font-size:.8rem;font-weight:500}
 .meet-chips .chip{padding:1px 9px;font-size:.7rem}
