@@ -49,7 +49,10 @@ input:focus{border-color:var(--accent)}
 input.meet-name-input{flex:1 1 200px;min-width:0;width:auto;font-size:1.0625rem;font-weight:600;color:var(--text);background:none;border:1px solid transparent;border-radius:var(--rs);padding:4px 8px;margin:-4px 0 -4px -8px;outline:none;transition:border-color .15s,background .15s}
 input.meet-name-input:hover{border-color:var(--border)}
 input.meet-name-input:focus{border-color:var(--accent);background:var(--bg)}
-.meet-actions{display:flex;align-items:center;gap:8px;margin-left:auto;flex-shrink:0}
+/* Two to a row: Share and Edit above, View and Settings below. A grid rather
+   than a wrap so the pair always breaks in the same place, and equal columns
+   so the four read as one block instead of a ragged edge. */
+.meet-actions{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-left:auto;flex-shrink:0;justify-items:stretch}
 .meet-chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:10px}
 .chip{display:inline-block;background:var(--accent-dim);color:var(--accent);border-radius:20px;padding:2px 11px;font-size:.8rem;font-weight:500}
 .meet-chips .chip{padding:1px 9px;font-size:.7rem}
