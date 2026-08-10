@@ -77,6 +77,19 @@ function normalizeMetric() {
     st.metric = 'total';
     savePref('mls_metric', st.metric);
   }
+  // Sorting by a column that is no longer on the cards reads as unsorted, so
+  // a hidden score hands the sort back to Total.
+  if (isScoreSort(st.sortCol) && !metricVisible(metricDef(st.sortCol))) {
+    st.sortCol = 'total';
+    savePref('mls_sort_col', st.sortCol);
+  }
+}
+
+function isScoreSort(key) {
+  for (var i = 0; i < METRICS.length; i++) {
+    if (METRICS[i].key === key) return true;
+  }
+  return false;
 }
 
 function toggleMetricVisibility(key) {
@@ -466,6 +479,15 @@ function parseWc(s) {
 }
 
 function setSort(col) {
+  // Ranking by a score that is switched off would sort the cards on a number
+  // they don't show, so choosing it brings the column with it.
+  if (isScoreSort(col)) {
+    var scoreDef = metricDef(col);
+    if (!metricVisible(scoreDef)) {
+      st.showMetric[col] = true;
+      if (scoreDef.pref) savePref(scoreDef.pref, '1');
+    }
+  }
   if (st.sortCol === col) {
     st.sortDir = st.sortDir === 'asc' ? 'desc' : 'asc';
   } else {
@@ -527,8 +549,10 @@ function sortEntries(entries) {
     }
     // One "by the numbers" sort, following whichever metric is on display —
     // sorting by DOTS while the cards lead with Total would read as unsorted.
-    if (st.sortCol === 'total') {
-      var def = metricDef(st.metric);
+    // A score in its own right — Total, GL or Dots — rather than whichever one
+    // the cards happen to be leading with.
+    if (isScoreSort(st.sortCol)) {
+      var def = metricDef(st.sortCol);
       var va = metricNum(st.resolved[a.idx], def, 'on');
       var vb = metricNum(st.resolved[b.idx], def, 'on');
       if (va !== vb) return dir * (va - vb);
@@ -1027,9 +1051,16 @@ function viewBodyHtml() {
       sortBtn('class', 'Class') +
       '</div>');
 
+    // All three are always offered. Picking one that is switched off turns it
+    // on rather than ranking by a number the cards don't show.
+    html += group('Score',
+      '<div class="src-ctrl">' +
+      METRICS.map(function(m) { return sortBtn(m.key, m.label); }).join('') +
+      '</div>' +
+      '<p class="hint">Ranking by GL Points or Dots switches that column on. Switching it off again hands the sort back to Total.</p>');
+
     html += group('Best Lift',
       '<div class="src-ctrl">' +
-      sortBtn('total', metricLabel(st.metric)) +
       LIFTS.map(function(l) { return sortBtn(l.key, l.label); }).join('') +
       '</div>' +
       '<p class="hint">Squat, bench and deadlift rank on each lifter\'s best ever, not on this meet. Tap the one already chosen to reverse it — the direction carries over when you switch.</p>');
@@ -1045,7 +1076,7 @@ function viewBodyHtml() {
           '" onclick="setMetric(\'' + m.key + '\')">' + m.label + '</button>';
       }).join('') +
       '</div>' +
-      '<p class="hint">Leads each card and sets what the numeric sort uses.</p>');
+      '<p class="hint">Which number leads each card. Sorting is chosen separately, under Score.</p>');
   }
 
   html += group('Flights',
