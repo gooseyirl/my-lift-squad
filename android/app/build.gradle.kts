@@ -13,15 +13,16 @@ android {
         applicationId = "com.gooseco.myliftsquad"
         minSdk = 26
         targetSdk = 36
-        versionCode = 13
-        versionName = "2.5.1"
+        versionCode = 14
+        versionName = "2.5.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

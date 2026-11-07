@@ -26,3 +26,7 @@
 
 # App models
 -keep class com.gooseco.myliftsquad.data.** { *; }
+
+# Backup/restore JSON models (serialised with Gson via reflection)
+-keep class com.gooseco.myliftsquad.ui.viewmodel.BackupData { *; }
+-keep class com.gooseco.myliftsquad.ui.viewmodel.BackupSquad { *; }
